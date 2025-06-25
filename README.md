@@ -38,7 +38,7 @@ For the global user settings, you simply do the following:
 }
 ```
 
-> Note: To configure the connection string for Chronicle you pass it an environment variable; `Cratis__Chronicle__Mcp__ConnectionString``
+> Note: To configure the connection string for Chronicle you pass it an environment variable; `Cratis__Chronicle__Mcp__ConnectionString`
 > running locally - on MacOS and Windows the host machine is found at `host.docker.internal`.
 
 For a local `mcp.json` file, its almost the same:
