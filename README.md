@@ -77,6 +77,7 @@ You can ask it things like:
 
 - List all observers in the [put name here] event store
 - List all observers in the [put name here] event store and namespace [put namespace here]
+- What observers in the [put event store name here] use event type [put event type name]
 
 ## Local development
 
