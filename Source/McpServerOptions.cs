@@ -9,7 +9,12 @@ namespace Cratis.Chronicle.Mcp;
 public class McpServerOptions
 {
     /// <summary>
-    /// Gets or sets the connection string for the Chronicle server.
+    /// Gets or sets the connection string for the Chronicle server gRPC endpoint.
     /// </summary>
     public string ConnectionString { get; set; } = "chronicle://localhost:35000";
+
+    /// <summary>
+    /// Gets or sets the base URL for the Chronicle management REST API.
+    /// </summary>
+    public string ManagementUrl { get; set; } = "http://localhost:8080";
 }

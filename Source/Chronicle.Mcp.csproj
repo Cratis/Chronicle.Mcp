@@ -5,9 +5,9 @@
     <AssemblyName>Cratis.Chronicle.Mcp</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Cratis.Chronicle.Connections" />
-    <PackageReference Include="Cratis.Chronicle.Contracts" />
+    <PackageReference Include="Cratis.Chronicle" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="ModelContextProtocol" />
   </ItemGroup>
 

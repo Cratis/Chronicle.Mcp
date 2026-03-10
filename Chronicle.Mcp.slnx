@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Source/">
+    <Project Path="Source/Chronicle.Mcp.csproj" />
+  </Folder>
+  <Folder Name="/Specs/">
+    <Project Path="Specs/Chronicle.Mcp.Specs.csproj" />
+  </Folder>
+</Solution>

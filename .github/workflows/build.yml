@@ -1,7 +1,7 @@
 name: Build
 
 env:
-  DOTNET_VERSION: "9.0.x"
+  DOTNET_VERSION: "10.0.x"
 
 on:
   workflow_dispatch:
@@ -9,11 +9,13 @@ on:
     branches: [ "main" ]
     paths:
       - "Source/**"
+      - "Specs/**"
   pull_request:
     branches:
       - "**"
     paths:
       - "Source/**"
+      - "Specs/**"
 
 jobs:
   dotnet-build:
@@ -31,3 +33,6 @@ jobs:
 
       - name: Build
         run: dotnet build --configuration Release
+
+      - name: Test
+        run: dotnet test --configuration Release --no-build

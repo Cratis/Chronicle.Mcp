@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.ComponentModel;
-using Cratis.Chronicle.Contracts.Observation;
+using Cratis.Chronicle.Mcp.Api;
 using ModelContextProtocol.Server;
 
 namespace Cratis.Chronicle.Mcp;
@@ -16,27 +16,21 @@ public static class ObserverTools
     /// <summary>
     /// Gets all observers for a specific event store.
     /// </summary>
-    /// <param name="observers">The <see cref="IObservers"/> to use.</param>
+    /// <param name="chronicleApiClient">The <see cref="ChronicleApiClient"/> to use.</param>
     /// <param name="eventStore">The name of the event store to get observers from.</param>
-    /// <returns>A collection of <see cref="ObserverInformation"/> for the specified.</returns>
-    [McpServerTool, Description("Gets all observers for a specific event store and optional namespace.")]
-    public static Task<IEnumerable<ObserverInformation>> GetObservers(IObservers observers, string eventStore) =>
-        GetObserversForNamespace(observers, eventStore);
+    /// <returns>A collection of <see cref="ObserverInformation"/> for the specified event store.</returns>
+    [McpServerTool(ReadOnly = true), Description("Gets all observers for a specific event store and optional namespace.")]
+    public static Task<IEnumerable<ObserverInformation>> GetObservers(ChronicleApiClient chronicleApiClient, string eventStore) =>
+        GetObserversForNamespace(chronicleApiClient, eventStore);
 
     /// <summary>
     /// Gets all observers for a specific event store and optional namespace.
     /// </summary>
-    /// <param name="observers">The <see cref="IObservers"/> to use.</param>
+    /// <param name="chronicleApiClient">The <see cref="ChronicleApiClient"/> to use.</param>
     /// <param name="eventStore">The name of the event store to get observers from.</param>
     /// <param name="namespace">The namespace to filter observers by.</param>
     /// <returns>A collection of <see cref="ObserverInformation"/> for the specified event store and namespace.</returns>
-    [McpServerTool, Description("Gets all observers for a specific event store and optional namespace.")]
-    public static async Task<IEnumerable<ObserverInformation>> GetObserversForNamespace(IObservers observers, string eventStore, string? @namespace = "Default")
-    {
-        return await observers.GetObservers(new AllObserversRequest
-        {
-            EventStore = eventStore,
-            Namespace = @namespace ?? "Default"
-        });
-    }
+    [McpServerTool(ReadOnly = true), Description("Gets all observers for a specific event store and optional namespace.")]
+    public static async Task<IEnumerable<ObserverInformation>> GetObserversForNamespace(ChronicleApiClient chronicleApiClient, string eventStore, string? @namespace = "Default") =>
+        await chronicleApiClient.GetObservers(eventStore, @namespace ?? "Default");
 }
