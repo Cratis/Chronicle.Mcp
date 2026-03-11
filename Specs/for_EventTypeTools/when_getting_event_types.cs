@@ -8,18 +8,10 @@ namespace Cratis.Chronicle.Mcp.Specs.for_EventTypeTools;
 [Collection(ChronicleCollection.Name)]
 public class when_getting_event_types(ChronicleFixture fixture) : given.a_chronicle_fixture(fixture)
 {
-    const string EventStoreName = "event-type-tools-spec";
-
     IEnumerable<EventType> _result = null!;
 
-    async Task Establish()
-    {
-        var eventStore = await Client.GetEventStore(EventStoreName);
-        await eventStore.EventLog.Append("test-source", new TestEvent("seeded content"));
-    }
-
     async Task Because() =>
-        _result = await EventTypeTools.GetEventTypes(ApiClient, EventStoreName);
+        _result = await EventTypeTools.GetEventTypes(ApiClient, ChronicleFixture.SharedEventStoreName);
 
     [Fact] void should_return_event_types() => _result.ShouldNotBeEmpty();
     [Fact] void should_include_test_event_type() => _result.ShouldContain(_ => _.Generation == 1);

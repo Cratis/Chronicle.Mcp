@@ -8,18 +8,10 @@ namespace Cratis.Chronicle.Mcp.Specs.for_ObserverTools;
 [Collection(ChronicleCollection.Name)]
 public class when_getting_observers(ChronicleFixture fixture) : given.a_chronicle_fixture(fixture)
 {
-    const string EventStoreName = "observer-tools-spec";
-
     IEnumerable<ObserverInformation> _result = null!;
 
-    async Task Establish()
-    {
-        var eventStore = await Client.GetEventStore(EventStoreName);
-        await eventStore.EventLog.Append("test-source", new TestEvent("seeded content"));
-    }
-
     async Task Because() =>
-        _result = await ObserverTools.GetObservers(ApiClient, EventStoreName);
+        _result = await ObserverTools.GetObservers(ApiClient, ChronicleFixture.SharedEventStoreName);
 
     [Fact] void should_return_observers() => _result.ShouldNotBeNull();
 }

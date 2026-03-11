@@ -9,4 +9,10 @@ namespace Cratis.Chronicle.Mcp.Api;
 /// <typeparam name="T">The type of data items in the result.</typeparam>
 /// <param name="Data">The collection of result items.</param>
 /// <param name="IsSuccess">Whether the query was successful.</param>
-public record QueryResult<T>(IEnumerable<T> Data, bool IsSuccess);
+/// <param name="HasExceptions">Whether the query produced server-side exceptions.</param>
+/// <param name="ExceptionMessages">Any exception messages from the server.</param>
+public record QueryResult<T>(
+    IEnumerable<T> Data,
+    bool IsSuccess,
+    bool HasExceptions = false,
+    IEnumerable<string>? ExceptionMessages = null);

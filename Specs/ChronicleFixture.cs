@@ -18,6 +18,11 @@ namespace Cratis.Chronicle.Mcp.Specs;
 public class ChronicleFixture : IAsyncLifetime
 #pragma warning restore CA1001
 {
+    /// <summary>
+    /// Gets the name of the shared event store seeded during fixture initialization.
+    /// </summary>
+    public const string SharedEventStoreName = "mcp-specs";
+
     INetwork _network = null!;
     IContainer _container = null!;
     HttpClient _httpClient = null!;
@@ -64,6 +69,22 @@ public class ChronicleFixture : IAsyncLifetime
             $"chronicle://chronicle-dev-client:chronicle-dev-secret@localhost:{grpcPort}?disableTls=true");
         options.ManagementPort = httpPort;
         Client = new ChronicleClient(options);
+
+        // Seed a shared event store so event types are registered and available for all tests.
+        var eventStore = await Client.GetEventStore(SharedEventStoreName);
+        await eventStore.EventLog.Append("seed-source", new TestEvent("fixture seed"));
+
+        // Wait for event type registration to propagate.
+        for (var attempt = 0; attempt < 30; attempt++)
+        {
+            var types = await ApiClient.GetEventTypes(SharedEventStoreName);
+            if (types.Any())
+            {
+                break;
+            }
+
+            await Task.Delay(500);
+        }
     }
 
     /// <inheritdoc/>
