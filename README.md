@@ -67,17 +67,44 @@ You can see this in action in the [mcp.json](./.vscode/mcp.json) in this reposit
 
 ## Prompts / Tools
 
+### Event Stores
+
+- List all event stores
+- List all event sequences for the [event store] event store
+
 ### Event Types
 
-You can ask it things like:
+- List all event types in the [event store] event store
+- Show me the event type registrations and schemas for [event store]
 
-- List all event types in the [put name here] event store
+### Event Sequences
+
+- Show the events in the event log of [event store]
+- Get events for event source [source id] in [event store]
 
 ### Observers
 
-- List all observers in the [put name here] event store
-- List all observers in the [put name here] event store and namespace [put namespace here]
-- What observers in the [put event store name here] use event type [put event type name]
+- List all observers in [event store]
+- List all observers in [event store] for namespace [namespace]
+- Replay observer [observer id] in [event store]
+- Replay partition [partition] for observer [observer id] in [event store]
+- Recover the failed partition [partition] for observer [observer id] in [event store]
+
+### Recommendations
+
+- List all recommendations in [event store]
+- Perform recommendation [recommendation id] in [event store]
+- Ignore recommendation [recommendation id] in [event store]
+
+### Jobs
+
+- Resume job [job id] in [event store]
+- Stop job [job id] in [event store]
+- Delete job [job id] in [event store]
+
+### Identities
+
+- List all identities that have caused events in [event store]
 
 ## Local development
 
