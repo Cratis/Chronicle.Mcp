@@ -19,7 +19,7 @@ public static class ObserverTools
     /// <param name="chronicleApiClient">The <see cref="ChronicleApiClient"/> to use.</param>
     /// <param name="eventStore">The name of the event store to get observers from.</param>
     /// <returns>A collection of <see cref="ObserverInformation"/> for the specified event store.</returns>
-    [McpServerTool(ReadOnly = true), Description("Gets all observers for a specific event store and optional namespace.")]
+    [McpServerTool(ReadOnly = true), Description("Gets all observers for a specific event store using the 'Default' namespace. Use GetObserversForNamespace to specify a different namespace.")]
     public static Task<IEnumerable<ObserverInformation>> GetObservers(ChronicleApiClient chronicleApiClient, string eventStore) =>
         GetObserversForNamespace(chronicleApiClient, eventStore);
 
@@ -30,7 +30,7 @@ public static class ObserverTools
     /// <param name="eventStore">The name of the event store to get observers from.</param>
     /// <param name="namespace">The namespace to filter observers by.</param>
     /// <returns>A collection of <see cref="ObserverInformation"/> for the specified event store and namespace.</returns>
-    [McpServerTool(ReadOnly = true), Description("Gets all observers for a specific event store and optional namespace.")]
+    [McpServerTool(ReadOnly = true), Description("Gets all observers for a specific event store and namespace. Each observer includes its type (Reactor/Projection/Reducer), running state, subscribed event types, and processing position.")]
     public static async Task<IEnumerable<ObserverInformation>> GetObserversForNamespace(ChronicleApiClient chronicleApiClient, string eventStore, string? @namespace = "Default") =>
         await chronicleApiClient.GetObservers(eventStore, @namespace ?? "Default");
 

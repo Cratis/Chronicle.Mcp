@@ -201,9 +201,18 @@ public class ChronicleApiClient(HttpClient httpClient)
     /// </summary>
     /// <param name="url">The relative URL to post to.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="HttpRequestException">The exception that is thrown when the Chronicle server returns an error response.</exception>
     async Task CommandAsync(string url)
     {
         using var response = await httpClient.PostAsync(url, null);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            var statusCode = (int)response.StatusCode;
+            throw new HttpRequestException(
+                $"Chronicle command failed with status {statusCode} ({response.StatusCode}) for '{url}'. " +
+                "Response: " + body + ". Verify the event store, namespace, and resource IDs are correct. " +
+                "Use the corresponding GET tool to list available resources first.");
+        }
     }
 }
