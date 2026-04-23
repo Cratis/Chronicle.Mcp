@@ -1,7 +1,9 @@
 ﻿// Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Cratis.Chronicle;
 using Cratis.Chronicle.Mcp;
+using Cratis.Chronicle.Mcp.Api;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,12 +26,18 @@ builder.Configuration
 
 builder.Logging.AddConsole(logging => logging.LogToStandardErrorThreshold = LogLevel.Trace);
 
-builder.Services.AddCratisChronicleConnection(urlFactory: (sp) =>
+builder.Services.AddSingleton(sp =>
 {
     var options = sp.GetRequiredService<IOptions<McpServerOptions>>().Value;
-    return options.ConnectionString;
+    return new ChronicleClient(options.ConnectionString);
 });
-builder.Services.AddCratisChronicleServices();
+builder.Services.AddSingleton<IChronicleClient>(sp => sp.GetRequiredService<ChronicleClient>());
+
+builder.Services.AddHttpClient<ChronicleApiClient>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<McpServerOptions>>().Value;
+    client.BaseAddress = new Uri(options.ManagementUrl);
+});
 
 builder.Services
     .AddMcpServer()
