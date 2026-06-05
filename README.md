@@ -38,7 +38,7 @@ For the global user settings, you simply do the following:
 }
 ```
 
-> Note: To configure the connection string for Chronicle you pass it an environment variable; `Cratis__Chronicle__Mcp__ConnectionString``
+> Note: To configure the connection string for Chronicle you pass it an environment variable; `Cratis__Chronicle__Mcp__ConnectionString`
 > running locally - on MacOS and Windows the host machine is found at `host.docker.internal`.
 
 For a local `mcp.json` file, its almost the same:
@@ -125,6 +125,7 @@ You can ask it things like:
 - List all observers in the [put name here] event store and namespace [put namespace here]
 - Show me the events in the [put name here] event store
 - Are there any failed partitions?
+- What observers in the [put event store name here] use event type [put event type name]
 
 ## Local development
 
