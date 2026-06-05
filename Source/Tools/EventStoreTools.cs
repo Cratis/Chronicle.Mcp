@@ -18,11 +18,14 @@ public static class EventStoreTools
     /// Lists all event stores registered on the Chronicle server.
     /// </summary>
     /// <param name="services">The Chronicle services.</param>
-    /// <returns>The names of all event stores.</returns>
+    /// <returns>Descriptors of all event stores.</returns>
     [McpServerTool(Name = "list_event_stores")]
     [Description("Lists all event stores registered on the Chronicle server. Use to discover valid event store names.")]
-    public static async Task<IEnumerable<string>> ListEventStores(IServices services) =>
-        await services.EventStores.GetEventStores();
+    public static async Task<IEnumerable<EventStoreDescriptor>> ListEventStores(IServices services)
+    {
+        var eventStores = await services.EventStores.GetEventStores();
+        return eventStores.Select(name => new EventStoreDescriptor(name));
+    }
 
     /// <summary>
     /// Lists all namespaces within an event store.
@@ -30,15 +33,18 @@ public static class EventStoreTools
     /// <param name="services">The Chronicle services.</param>
     /// <param name="configuration">The connection configuration used to resolve defaults.</param>
     /// <param name="eventStore">The event store to list namespaces for. Defaults to the configured event store.</param>
-    /// <returns>The names of all namespaces in the event store.</returns>
+    /// <returns>Descriptors of all namespaces in the event store.</returns>
     [McpServerTool(Name = "list_namespaces")]
     [Description("Lists all namespaces within an event store. Use to discover valid namespace names.")]
-    public static async Task<IEnumerable<string>> ListNamespaces(
+    public static async Task<IEnumerable<NamespaceDescriptor>> ListNamespaces(
         IServices services,
         ChronicleConnectionConfiguration configuration,
-        [Description("The event store to list namespaces for. Defaults to the configured event store.")] string? eventStore = null) =>
-        await services.Namespaces.GetNamespaces(new GetNamespacesRequest
+        [Description("The event store to list namespaces for. Defaults to the configured event store.")] string? eventStore = null)
+    {
+        var namespaces = await services.Namespaces.GetNamespaces(new GetNamespacesRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore)
         });
+        return namespaces.Select(name => new NamespaceDescriptor(name));
+    }
 }

@@ -67,14 +67,18 @@ You can see this in action in the [mcp.json](./.vscode/mcp.json) in this reposit
 
 ## Configuration
 
-The MCP server can be configured entirely on its own, and it is also compatible with the
-[Cratis CLI](https://github.com/Cratis/cli). For any value you do not set explicitly, the server
-resolves it in this order:
+**Configuration is optional.** The MCP server works out of the box with sensible defaults suitable for local development:
+- **Connection String:** `chronicle://localhost:35000/?disableTls=true`
+- **Credentials:** Development client ID (`chronicle-dev-client`) and secret (`chronicle-dev-secret`)
+- **Management Port:** `8080`
+
+If you need to customize any settings, the MCP server can be configured entirely on its own and is also compatible with the
+[Cratis CLI](https://github.com/Cratis/cli). For any value you do not set explicitly, the server resolves it in this order:
 
 1. Explicit MCP options (environment variables / `appsettings.json`).
 2. The `CHRONICLE_CONNECTION_STRING` / `CHRONICLE_MANAGEMENT_PORT` environment variables.
 3. The active context in the CLI configuration at `~/.cratis/config.json`.
-4. Built-in development defaults (`chronicle://localhost:35000/?disableTls=true`).
+4. Built-in development defaults.
 
 When client credentials are used, the server obtains and caches OAuth tokens in `~/.cratis/tokens`,
 the same location used by the CLI, so tokens are shared between the two.
@@ -84,17 +88,14 @@ they use the `Cratis__Chronicle__Mcp__` prefix:
 
 | Option | Environment variable | Description |
 | ------ | -------------------- | ----------- |
-| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. |
-| `ManagementPort` | `Cratis__Chronicle__Mcp__ManagementPort` | Management port for the HTTP API and token endpoint (default `8080`). |
+| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000/?disableTls=true`. |
+| `ManagementPort` | `Cratis__Chronicle__Mcp__ManagementPort` | Management port for the HTTP API and token endpoint. Defaults to `8080`. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from (defaults to the active context). |
 | `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Set to `false` to ignore `~/.cratis/config.json` entirely. |
-| `ClientId` / `ClientSecret` | `Cratis__Chronicle__Mcp__ClientId` / `...__ClientSecret` | Client credentials for authentication. |
+| `ClientId` / `ClientSecret` | `Cratis__Chronicle__Mcp__ClientId` / `...__ClientSecret` | Client credentials for authentication. Defaults to development credentials if not specified. |
 | `ApiKey` | `Cratis__Chronicle__Mcp__ApiKey` | An API key to authenticate with, as an alternative to client credentials. |
-| `EventStore` | `Cratis__Chronicle__Mcp__EventStore` | The default event store used by tools when none is specified. |
-| `Namespace` | `Cratis__Chronicle__Mcp__Namespace` | The default namespace used by tools when none is specified. |
-
-> Note: If no credentials are supplied and none are found in the CLI configuration, the built-in
-> development credentials are used, which work against a local development Chronicle server.
+| `EventStore` | `Cratis__Chronicle__Mcp__EventStore` | The default event store used by tools when none is specified. Defaults to `default`. |
+| `Namespace` | `Cratis__Chronicle__Mcp__Namespace` | The default namespace used by tools when none is specified. Defaults to `Default`. |
 
 ## Prompts / Tools
 
