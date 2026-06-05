@@ -106,6 +106,8 @@ mention a store or namespace when you need a specific one.
 
 | Tool | Description |
 | ---- | ----------- |
+| Tool | Description |
+| ---- | ----------- |
 | `list_event_stores` | List all event stores on the server. |
 | `list_namespaces` | List namespaces within an event store. |
 | `list_event_types` | List registered event types. |
@@ -119,6 +121,12 @@ mention a store or namespace when you need a specific one.
 | `get_tail_sequence_number` | Get the highest used sequence number (tail) in an event sequence. |
 | `list_recommendations` | List active maintenance recommendations. |
 | `get_server_version` | Get version info from the server (also a connectivity check). |
+| `list_jobs` | List all jobs in a namespace, optionally filtered by job status. |
+| `get_job` | Get a specific job by ID, including full details and status changes. |
+| `get_job_steps` | Get the job steps for a specific job, optionally filtered by step status. |
+| `stop_job` | Stop a specific job (transitions to Stopped status). |
+| `resume_job` | Resume a specific stopped job. |
+| `delete_job` | Delete a specific job (transitions to Removing status). |
 
 You can ask it things like:
 
@@ -128,6 +136,10 @@ You can ask it things like:
 - Show me the events in the [put name here] event store
 - Are there any failed partitions?
 - What observers in the [put event store name here] use event type [put event type name]
+- List all jobs in the [put event store name here] event store
+- Show me job [put job id here] in the [put namespace name here] namespace
+- What steps does job [put job id here] have?
+- Stop / Resume / Delete job [put job id here]
 
 ## Local development
 
