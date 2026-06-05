@@ -68,7 +68,8 @@ You can see this in action in the [mcp.json](./.vscode/mcp.json) in this reposit
 ## Configuration
 
 **Configuration is optional.** The MCP server works out of the box with sensible defaults suitable for local development:
-- **Connection String:** `chronicle://localhost:35000/?disableTls=true`
+
+- **Connection String:** `chronicle://host.docker.internal:35000/?disableTls=true`
 - **Credentials:** Development client ID (`chronicle-dev-client`) and secret (`chronicle-dev-secret`)
 - **Management Port:** `8080`
 

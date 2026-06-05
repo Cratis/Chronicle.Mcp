@@ -16,7 +16,7 @@
                 "run",
                 "-i",
                 "--rm",
-                "-eCratis__Chronicle__Mcp__ConnectionString=chronicle://localhost:35000",
+                "-eCratis__Chronicle__Mcp__ConnectionString=chronicle://host.docker.internal:35000/?disableTls=true",
                 "cratis/chronicle-mcp"
             ]
         }
