@@ -43,7 +43,7 @@ public static class JobTools
         var jobs = await services.Jobs.GetJobs(request);
 
         var jobsList = jobs.ToList();
-        var result = jobsList.Select(job => ToDescriptor(job)).ToList();
+        var result = jobsList.ConvertAll(ToDescriptor);
 
         if (!string.IsNullOrWhiteSpace(status))
         {
@@ -70,6 +70,7 @@ public static class JobTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <returns>Either a job descriptor with full details including status changes and progress, or a job error.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the job result type is unknown.</exception>
     [McpServerTool(Name = "get_job")]
     [Description("Gets a specific job by ID. Returns either a job descriptor with full details including status changes and progress, or a job error (NotFound, TypeIsNotAJobStateType, TypeIsNotAssociatedWithAJobType).")]
     public static async Task<JobResult> GetJob(
@@ -89,7 +90,7 @@ public static class JobTools
         var result = await services.Jobs.GetJob(request);
 
         var oneOfValue = result.Value as OneOf<Job, JobError>;
-        return oneOfValue.Value switch
+        return oneOfValue?.Value switch
         {
             Job job => new JobResult(ToDescriptor(job), null),
             JobError jobError => new JobResult(null, jobError),
@@ -131,7 +132,7 @@ public static class JobTools
             {
                 if (Enum.TryParse<JobStepStatus>(statusStr, ignoreCase: true, out var parsed))
                 {
-                    request.Statuses = request.Statuses.Concat(new[] { parsed }).ToArray();
+                    request.Statuses = request.Statuses.Concat([parsed]).ToArray();
                 }
             }
         }
@@ -245,10 +246,10 @@ public static class JobTools
 
     static JobStepDescriptor ToStepDescriptor(JobStep jobStep)
     {
-        var statusChanges = (jobStep.StatusChanges ?? Enumerable.Empty<JobStepStatusChanged>()).Select(sc => new JobStepStatusChangeDescriptor(
+        var statusChanges = (jobStep.StatusChanges ?? []).Select(sc => new JobStepStatusChangeDescriptor(
             sc.Status.ToString(),
             sc.Occurred,
-            sc.ExceptionMessages ?? Array.Empty<string>(),
+            sc.ExceptionMessages ?? [],
             sc.ExceptionStackTrace ?? string.Empty));
 
         return new JobStepDescriptor(
@@ -256,9 +257,7 @@ public static class JobTools
             jobStep.Type ?? string.Empty,
             jobStep.Name ?? string.Empty,
             jobStep.Status.ToString(),
-            statusChanges,
-            jobStep.Progress is not null ? new JobStepProgressDescriptor(
-                jobStep.Progress.Percentage,
-                jobStep.Progress.Message ?? string.Empty) : null);
+            StatusChanges: statusChanges,
+            jobStep.Progress is not null ? new JobStepProgressDescriptor(jobStep.Progress.Percentage, jobStep.Progress.Message ?? string.Empty) : null);
     }
 }
