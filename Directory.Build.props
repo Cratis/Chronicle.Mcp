@@ -2,7 +2,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <ImplicitUsings>true</ImplicitUsings>
-        <LangVersion>13.0</LangVersion>
+        <LangVersion>14.0</LangVersion>
         <Nullable>enable</Nullable>
 
         <!-- Debuggability -->
@@ -28,7 +28,7 @@
 
         <NoWarn>NU1507</NoWarn>
 
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)'=='Debug'">
