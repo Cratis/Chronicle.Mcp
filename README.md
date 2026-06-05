@@ -65,18 +65,66 @@ You can see this in action in the [mcp.json](./.vscode/mcp.json) in this reposit
 
 > Note: The `cratis/chronicle-mcp` is a multi CPU architecture image supporting both x64 and arm64 automatically.
 
+## Configuration
+
+The MCP server can be configured entirely on its own, and it is also compatible with the
+[Cratis CLI](https://github.com/Cratis/cli). For any value you do not set explicitly, the server
+resolves it in this order:
+
+1. Explicit MCP options (environment variables / `appsettings.json`).
+2. The `CHRONICLE_CONNECTION_STRING` / `CHRONICLE_MANAGEMENT_PORT` environment variables.
+3. The active context in the CLI configuration at `~/.cratis/config.json`.
+4. Built-in development defaults (`chronicle://localhost:35000/?disableTls=true`).
+
+When client credentials are used, the server obtains and caches OAuth tokens in `~/.cratis/tokens`,
+the same location used by the CLI, so tokens are shared between the two.
+
+All options live under the `Cratis:Chronicle:Mcp` configuration section. As environment variables
+they use the `Cratis__Chronicle__Mcp__` prefix:
+
+| Option | Environment variable | Description |
+| ------ | -------------------- | ----------- |
+| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. |
+| `ManagementPort` | `Cratis__Chronicle__Mcp__ManagementPort` | Management port for the HTTP API and token endpoint (default `8080`). |
+| `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from (defaults to the active context). |
+| `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Set to `false` to ignore `~/.cratis/config.json` entirely. |
+| `ClientId` / `ClientSecret` | `Cratis__Chronicle__Mcp__ClientId` / `...__ClientSecret` | Client credentials for authentication. |
+| `ApiKey` | `Cratis__Chronicle__Mcp__ApiKey` | An API key to authenticate with, as an alternative to client credentials. |
+| `EventStore` | `Cratis__Chronicle__Mcp__EventStore` | The default event store used by tools when none is specified. |
+| `Namespace` | `Cratis__Chronicle__Mcp__Namespace` | The default namespace used by tools when none is specified. |
+
+> Note: If no credentials are supplied and none are found in the CLI configuration, the built-in
+> development credentials are used, which work against a local development Chronicle server.
+
 ## Prompts / Tools
 
-### Event Types
+The server exposes the following tools. Every tool defaults the event store and namespace to the
+configured defaults when you do not specify them, so you can ask high-level questions and only
+mention a store or namespace when you need a specific one.
+
+| Tool | Description |
+| ---- | ----------- |
+| `list_event_stores` | List all event stores on the server. |
+| `list_namespaces` | List namespaces within an event store. |
+| `list_event_types` | List registered event types. |
+| `list_observers` | List observers (reactors, reducers, projections), optionally filtered by type. |
+| `get_observer` | Show detailed information about a specific observer. |
+| `list_failed_partitions` | List observer partitions that have failed and are paused. |
+| `list_projections` | List projection definitions. |
+| `list_read_models` | List read model definitions. |
+| `get_read_model_instances` | List the current instances of a read model (paged). |
+| `get_events` | Read events from an event sequence, with optional filtering. |
+| `get_tail_sequence_number` | Get the highest used sequence number (tail) in an event sequence. |
+| `list_recommendations` | List active maintenance recommendations. |
+| `get_server_version` | Get version info from the server (also a connectivity check). |
 
 You can ask it things like:
 
+- List all event stores
 - List all event types in the [put name here] event store
-
-### Observers
-
-- List all observers in the [put name here] event store
 - List all observers in the [put name here] event store and namespace [put namespace here]
+- Show me the events in the [put name here] event store
+- Are there any failed partitions?
 
 ## Local development
 
