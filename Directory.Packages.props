@@ -7,7 +7,7 @@
     <!-- Cratis -->
     <PackageVersion Include="Cratis.Chronicle.Connections" Version="15.34.5" />
     <PackageVersion Include="Cratis.Chronicle.Contracts" Version="15.34.5" />
-    <PackageVersion Include="Cratis.Fundamentals" Version="7.15.1" />
+    <PackageVersion Include="Cratis.Fundamentals" Version="7.16.0" />
     <!-- Roslyn-->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
