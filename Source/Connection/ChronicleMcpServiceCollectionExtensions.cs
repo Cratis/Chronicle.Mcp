@@ -45,11 +45,10 @@ public static class ChronicleMcpServiceCollectionExtensions
         var correlationIdAccessor = serviceProvider.GetRequiredService<ICorrelationIdAccessor>();
 
         var connectionString = new ChronicleConnectionString(configuration.ResolveConnectionString());
-        var managementPort = configuration.ResolveManagementPort();
 
         // Ownership of the token provider is transferred to the ChronicleConnection, which disposes it when it is disposed.
 #pragma warning disable CA2000
-        var tokenProvider = CreateTokenProvider(connectionString, managementPort, configuration.ContextName, loggerFactory);
+        var tokenProvider = CreateTokenProvider(connectionString, configuration.ContextName, loggerFactory);
 #pragma warning restore CA2000
 
         var connectTimeoutSeconds = int.TryParse(Environment.GetEnvironmentVariable("CHRONICLE_CONNECT_TIMEOUT_SECONDS"), out var timeout) ? timeout : 5;
@@ -73,26 +72,27 @@ public static class ChronicleMcpServiceCollectionExtensions
             skipKeepAlive: false);
     }
 
-    static ITokenProvider? CreateTokenProvider(ChronicleConnectionString connectionString, int managementPort, string contextName, ILoggerFactory loggerFactory) =>
+    static ITokenProvider? CreateTokenProvider(ChronicleConnectionString connectionString, string contextName, ILoggerFactory loggerFactory) =>
         connectionString.AuthenticationMode switch
         {
-            AuthenticationMode.ClientCredentials => CreateCachingTokenProvider(connectionString, managementPort, contextName, loggerFactory),
+            AuthenticationMode.ClientCredentials => CreateCachingTokenProvider(connectionString, contextName, loggerFactory),
             AuthenticationMode.ApiKey when !string.IsNullOrEmpty(connectionString.ApiKey) => new StaticTokenProvider(connectionString.ApiKey),
             _ => null
         };
 
-    static FileSystemCachingTokenProvider CreateCachingTokenProvider(ChronicleConnectionString connectionString, int managementPort, string contextName, ILoggerFactory loggerFactory)
+    static FileSystemCachingTokenProvider CreateCachingTokenProvider(ChronicleConnectionString connectionString, string contextName, ILoggerFactory loggerFactory)
     {
         var cachePath = ChronicleCliConfiguration.GetTokenCachePath($"{contextName}_{connectionString.Username ?? string.Empty}");
         Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
 
         // Ownership of the inner provider is transferred to the FileSystemCachingTokenProvider, which disposes it.
+        // The token endpoint is derived from the connection's server address (host:port/connect/token),
+        // so there is no separate management-port argument as in earlier Chronicle client releases.
 #pragma warning disable CA2000
         var inner = new OAuthTokenProvider(
             connectionString.ServerAddress,
             connectionString.Username ?? string.Empty,
             connectionString.Password ?? string.Empty,
-            managementPort,
             connectionString.DisableTls,
             loggerFactory.CreateLogger<OAuthTokenProvider>());
 #pragma warning restore CA2000

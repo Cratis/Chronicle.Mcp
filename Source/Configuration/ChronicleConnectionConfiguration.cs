@@ -30,19 +30,9 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
     public const string DefaultNamespaceName = "Default";
 
     /// <summary>
-    /// The default management port for the HTTP API and token endpoint.
-    /// </summary>
-    public const int DefaultManagementPort = 8080;
-
-    /// <summary>
     /// Environment variable holding the Chronicle connection string.
     /// </summary>
     public const string ConnectionStringEnvVar = "CHRONICLE_CONNECTION_STRING";
-
-    /// <summary>
-    /// Environment variable holding the management port override.
-    /// </summary>
-    public const string ManagementPortEnvVar = "CHRONICLE_MANAGEMENT_PORT";
 
     const string DefaultConnectionString = "chronicle://localhost:35000/?disableTls=true";
     const string Scheme = "chronicle://";
@@ -82,32 +72,12 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
             else
             {
                 connectionString = !string.IsNullOrWhiteSpace(Context.Server)
-                    ? Context.Server!
+                    ? Context.Server
                     : DefaultConnectionString;
             }
         }
 
         return ComposeCredentials(connectionString);
-    }
-
-    /// <summary>
-    /// Resolves the effective management port.
-    /// </summary>
-    /// <returns>The resolved management port.</returns>
-    public int ResolveManagementPort()
-    {
-        if (_options.ManagementPort.HasValue)
-        {
-            return _options.ManagementPort.Value;
-        }
-
-        var envVar = Environment.GetEnvironmentVariable(ManagementPortEnvVar);
-        if (!string.IsNullOrWhiteSpace(envVar) && int.TryParse(envVar, out var envPort))
-        {
-            return envPort;
-        }
-
-        return Context.ManagementPort ?? DefaultManagementPort;
     }
 
     /// <summary>
@@ -186,13 +156,13 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
         // 2. Cached login token from 'cratis chronicle login'.
         if (!string.IsNullOrWhiteSpace(Context.AccessToken) && IsTokenValid(Context.TokenExpiry))
         {
-            return AppendApiKey(connectionString, Context.AccessToken!);
+            return AppendApiKey(connectionString, Context.AccessToken);
         }
 
         // 3. Service account credentials stored in the CLI context.
         if (!string.IsNullOrWhiteSpace(Context.ClientId) && !string.IsNullOrWhiteSpace(Context.ClientSecret))
         {
-            return InsertCredentials(connectionString, Context.ClientId!, Context.ClientSecret!);
+            return InsertCredentials(connectionString, Context.ClientId, Context.ClientSecret);
         }
 
         // 4. Built-in development credentials for local Chronicle servers.

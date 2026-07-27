@@ -25,11 +25,6 @@ public class McpServerOptions
     public string? ConnectionString { get; set; }
 
     /// <summary>
-    /// Gets or sets the management port for the HTTP API and token endpoint.
-    /// </summary>
-    public int? ManagementPort { get; set; }
-
-    /// <summary>
     /// Gets or sets the name of the CLI context to read connection details from.
     /// </summary>
     /// <remarks>
