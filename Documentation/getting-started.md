@@ -4,7 +4,7 @@ By the end of this page you will have the Chronicle MCP server running inside yo
 
 ## Prerequisites
 
-- A running Chronicle server. If you do not have one, the `docker-compose.yml` in the [`Source`](../Source/docker-compose.yml) folder brings one up with `docker compose up -d`.
+- A running Chronicle server. If you do not have one, the [`docker-compose.yml` in the repository](https://github.com/Cratis/Chronicle.Mcp/blob/main/Source/docker-compose.yml) brings one up with `docker compose up -d`.
 - An MCP-capable agent (for example VS Code with an agent extension, or any client that speaks the Model Context Protocol over stdio).
 - Docker, to run the pre-built `cratis/chronicle-mcp` image.
 
