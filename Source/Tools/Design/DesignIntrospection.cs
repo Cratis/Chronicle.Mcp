@@ -1,0 +1,89 @@
+// Copyright (c) Cratis. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.Projections;
+
+namespace Cratis.Chronicle.Mcp.Tools.Design;
+
+/// <summary>
+/// Shared introspection helpers for the design-time tools. Everything here reads the store's registered
+/// schema so suggestions are grounded in what actually exists rather than guessed.
+/// </summary>
+public static class DesignIntrospection
+{
+    /// <summary>
+    /// Resolves the registration for an event type by name, picking a specific generation or the latest one.
+    /// </summary>
+    /// <param name="registrations">The registrations returned from the store.</param>
+    /// <param name="name">The event type id/name to resolve (case-insensitive).</param>
+    /// <param name="generation">The optional specific generation to resolve; the highest generation is used when null.</param>
+    /// <returns>The matching <see cref="EventTypeRegistration"/>, or null when no event type matches.</returns>
+    public static EventTypeRegistration? ResolveRegistration(IEnumerable<EventTypeRegistration> registrations, string name, uint? generation = null)
+    {
+        var matches = registrations
+            .Where(registration => string.Equals(registration.Type.Id, name, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (matches.Count == 0)
+        {
+            return null;
+        }
+
+        return generation.HasValue
+            ? matches.FirstOrDefault(registration => registration.Type.Generation == generation.Value)
+            : matches.OrderByDescending(registration => registration.Type.Generation).First();
+    }
+
+    /// <summary>
+    /// Collects every event type id consumed by a projection, walking nested and child projections.
+    /// </summary>
+    /// <param name="projection">The projection definition to inspect.</param>
+    /// <returns>The distinct set of event type ids the projection reads from.</returns>
+    public static IReadOnlySet<string> CollectConsumedEventTypeIds(ProjectionDefinition projection)
+    {
+        var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        CollectFromLevel(projection.From, projection.Join, projection.RemovedWith, projection.RemovedWithJoin, projection.FromEventProperty, projection.Children, projection.Nested, ids);
+        return ids;
+    }
+
+    static void CollectFromLevel(
+        IDictionary<EventType, FromDefinition> from,
+        IDictionary<EventType, JoinDefinition> join,
+        IDictionary<EventType, RemovedWithDefinition> removedWith,
+        IDictionary<EventType, RemovedWithJoinDefinition> removedWithJoin,
+        FromEventPropertyDefinition? fromEventProperty,
+        IDictionary<string, ChildrenDefinition> children,
+        IDictionary<string, ChildrenDefinition> nested,
+        HashSet<string> ids)
+    {
+        AddEventTypeIds(from?.Keys, ids);
+        AddEventTypeIds(join?.Keys, ids);
+        AddEventTypeIds(removedWith?.Keys, ids);
+        AddEventTypeIds(removedWithJoin?.Keys, ids);
+
+        if (fromEventProperty?.Event is { } propertyEvent && !string.IsNullOrEmpty(propertyEvent.Id))
+        {
+            ids.Add(propertyEvent.Id);
+        }
+
+        foreach (var child in EnumerateChildren(children).Concat(EnumerateChildren(nested)))
+        {
+            CollectFromLevel(child.From, child.Join, child.RemovedWith, child.RemovedWithJoin, child.FromEventProperty, child.Children, child.Nested, ids);
+        }
+    }
+
+    static IEnumerable<ChildrenDefinition> EnumerateChildren(IDictionary<string, ChildrenDefinition>? children) =>
+        children?.Values ?? [];
+
+    static void AddEventTypeIds(IEnumerable<EventType>? eventTypes, HashSet<string> ids)
+    {
+        foreach (var eventType in eventTypes ?? [])
+        {
+            if (!string.IsNullOrEmpty(eventType.Id))
+            {
+                ids.Add(eventType.Id);
+            }
+        }
+    }
+}
