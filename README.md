@@ -71,13 +71,12 @@ You can see this in action in the [mcp.json](./.vscode/mcp.json) in this reposit
 
 - **Connection String:** `chronicle://host.docker.internal:35000/?disableTls=true`
 - **Credentials:** Development client ID (`chronicle-dev-client`) and secret (`chronicle-dev-secret`)
-- **Management Port:** `8080`
 
 If you need to customize any settings, the MCP server can be configured entirely on its own and is also compatible with the
 [Cratis CLI](https://github.com/Cratis/cli). For any value you do not set explicitly, the server resolves it in this order:
 
 1. Explicit MCP options (environment variables / `appsettings.json`).
-2. The `CHRONICLE_CONNECTION_STRING` / `CHRONICLE_MANAGEMENT_PORT` environment variables.
+2. The `CHRONICLE_CONNECTION_STRING` environment variable.
 3. The active context in the CLI configuration at `~/.cratis/config.json`.
 4. Built-in development defaults.
 
@@ -90,7 +89,6 @@ they use the `Cratis__Chronicle__Mcp__` prefix:
 | Option | Environment variable | Description |
 | ------ | -------------------- | ----------- |
 | `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000/?disableTls=true`. |
-| `ManagementPort` | `Cratis__Chronicle__Mcp__ManagementPort` | Management port for the HTTP API and token endpoint. Defaults to `8080`. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from (defaults to the active context). |
 | `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Set to `false` to ignore `~/.cratis/config.json` entirely. |
 | `ClientId` / `ClientSecret` | `Cratis__Chronicle__Mcp__ClientId` / `...__ClientSecret` | Client credentials for authentication. Defaults to development credentials if not specified. |
@@ -104,8 +102,13 @@ The server exposes the following tools. Every tool defaults the event store and 
 configured defaults when you do not specify them, so you can ask high-level questions and only
 mention a store or namespace when you need a specific one.
 
-| Tool | Description |
-| ---- | ----------- |
+The tools come in two complementary sets: **operate-side** tools for inspecting and operating a live
+store, and **design-time** tools that turn natural language into Chronicle artifacts grounded in the
+store's real schema. See the [Documentation](./Documentation/index.md) folder for a full guide, and
+[How it works](./Documentation/concepts.md) for the split.
+
+### Operate-side
+
 | Tool | Description |
 | ---- | ----------- |
 | `list_event_stores` | List all event stores on the server. |
@@ -128,6 +131,16 @@ mention a store or namespace when you need a specific one.
 | `resume_job` | Resume a specific stopped job. |
 | `delete_job` | Delete a specific job (transitions to Removing status). |
 
+### Design-time
+
+| Tool | Description |
+| ---- | ----------- |
+| `describe_event_type` | Describe an event type's real schema — every property with its JSON and suggested C# type. The grounding primitive for the others. |
+| `scaffold_read_model` | Generate a reviewable read model + model-bound projection from one or more event types, grounded in their schema. |
+| `audit_unconsumed_event_types` | Report event types nothing reads, plus consumers that reference an event type id that no longer exists. |
+| `generate_event_catalog` | Produce a living data dictionary — every event type, its fields, and its consumers. |
+| `explain_causal_trace` | Read an event source's ordered history with correlation and causation, to narrate what happened and why. |
+
 You can ask it things like:
 
 - List all event stores
@@ -140,6 +153,14 @@ You can ask it things like:
 - Show me job [put job id here] in the [put namespace name here] namespace
 - What steps does job [put job id here] have?
 - Stop / Resume / Delete job [put job id here]
+
+And design-time questions like:
+
+- Show me all the [put concept here] registered (scaffolds a read model + projection)
+- What fields does the [put event type here] event have?
+- What events are we writing that nothing reads?
+- Give me a catalog of our [put area here] events and who reads them
+- Why does [put entity here] show as [put state here]?
 
 ## Local development
 

@@ -1,0 +1,12 @@
+- name: Overview
+  href: index.md
+- name: Getting started
+  href: getting-started.md
+- name: Configuration
+  href: configuration.md
+- name: How it works
+  href: concepts.md
+- name: Operate-side
+  href: operate-side/toc.yml
+- name: Design-time
+  href: design-time/toc.yml

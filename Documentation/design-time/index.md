@@ -1,0 +1,27 @@
+# Design-time capabilities
+
+The design-time tools turn a plain-language request into Chronicle artifacts — read models, projections, audits, and catalogs — grounded in the store's real schema. They are read-only against the store and generative against your codebase: nothing is written to the store, and generated code comes back as a proposal you review. See [How it works](../concepts.md) for the principle behind them.
+
+## Capabilities
+
+| Capability | Tool | Use it to |
+| ---------- | ---- | --------- |
+| [Describe an event type](describe-event-type.md) | `describe_event_type` | Read an event type's real fields and types — the grounding primitive the others build on. |
+| [Read-model scaffolding](read-model-scaffolding.md) | `scaffold_read_model` | Turn a set of event types into a reviewable read model + projection, grounded in their schema. |
+| [Unconsumed-event audit](unconsumed-event-audit.md) | `audit_unconsumed_event_types` | Find events nothing reads, and consumers pointing at event types that no longer exist. |
+| [Event catalog](event-catalog.md) | `generate_event_catalog` | Produce a living data dictionary — every event, its fields, and its consumers. |
+| [Causal trace](causal-trace.md) | `explain_causal_trace` | Turn an event source's raw log into a "what happened and why" narrative. |
+
+## How an agent combines them
+
+A typical flow chains a few tools. To answer *"Show me all the users registered"* an agent might:
+
+1. Resolve candidate event types (`list_event_types`, or [Event catalog](event-catalog.md)).
+2. Inspect their real fields with [describe an event type](describe-event-type.md).
+3. Check whether a projection already answers the question, then propose one with [read-model scaffolding](read-model-scaffolding.md).
+
+Because the tools return structured data rather than prose, the agent does the natural-language reasoning while the store supplies the facts.
+
+## Roadmap
+
+The [capability hand-off](https://github.com/Cratis/Chronicle.Mcp) sketches ten design-time capabilities. The five above are the grounding-and-generation core. The remaining ideas — missing-event-type suggestions, projection-vs-reducer advice, consistency-boundary (DCB) advice, schema-evolution assistance, spec scaffolding, and constraint suggestions — build on the same introspection pipeline and are candidates for future releases.
