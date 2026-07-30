@@ -46,7 +46,7 @@ public static class EventCatalogTools
         var observers = (await services.Observers.GetObservers(new AllObserversRequest { EventStore = resolvedEventStore, Namespace = resolvedNamespace })).ToList();
         var readModels = (await services.ReadModels.GetDefinitions(new GetDefinitionsRequest { EventStore = resolvedEventStore })).ReadModels;
 
-        var consumersByEventType = BuildConsumerIndex(projections, observers, readModels);
+        var consumersByEventType = DesignIntrospection.BuildConsumerIndex(projections, observers, readModels);
 
         return registrations
             .GroupBy(registration => registration.Type.Id, StringComparer.OrdinalIgnoreCase)
@@ -65,64 +65,6 @@ public static class EventCatalogTools
             .ToList();
     }
 
-    static List<EventCatalogConsumer> Consumers(Dictionary<string, List<EventCatalogConsumer>> index, string eventTypeId) =>
+    static IReadOnlyList<EventCatalogConsumer> Consumers(IReadOnlyDictionary<string, IReadOnlyList<EventCatalogConsumer>> index, string eventTypeId) =>
         index.TryGetValue(eventTypeId, out var consumers) ? consumers : [];
-
-    static Dictionary<string, List<EventCatalogConsumer>> BuildConsumerIndex(
-        IEnumerable<ProjectionDefinition> projections,
-        IEnumerable<ObserverInformation> observers,
-        IEnumerable<ReadModelDefinition> readModels)
-    {
-        var readModelByObserverId = readModels
-            .Where(readModel => !string.IsNullOrEmpty(readModel.ObserverIdentifier))
-            .GroupBy(readModel => readModel.ObserverIdentifier, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => ReadModelName(group.First()), StringComparer.Ordinal);
-
-        var index = new Dictionary<string, List<EventCatalogConsumer>>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var projection in projections)
-        {
-            var consumer = new EventCatalogConsumer(nameof(ObserverType.Projection), projection.Identifier, string.IsNullOrWhiteSpace(projection.ReadModel) ? null : projection.ReadModel);
-            foreach (var eventTypeId in DesignIntrospection.CollectConsumedEventTypeIds(projection))
-            {
-                Add(index, eventTypeId, consumer);
-            }
-        }
-
-        foreach (var observer in observers.Where(observer => observer.Type != ObserverType.Projection))
-        {
-            var readModel = readModelByObserverId.TryGetValue(observer.Id, out var name) ? name : null;
-            var consumer = new EventCatalogConsumer(observer.Type.ToString(), observer.Id, readModel);
-            foreach (var eventTypeId in (observer.EventTypes ?? []).Select(eventType => eventType.Id).Where(id => !string.IsNullOrEmpty(id)))
-            {
-                Add(index, eventTypeId, consumer);
-            }
-        }
-
-        return index;
-    }
-
-    static string? ReadModelName(ReadModelDefinition readModel)
-    {
-        if (!string.IsNullOrWhiteSpace(readModel.DisplayName))
-        {
-            return readModel.DisplayName;
-        }
-
-        return string.IsNullOrWhiteSpace(readModel.ContainerName) ? null : readModel.ContainerName;
-    }
-
-    static void Add(Dictionary<string, List<EventCatalogConsumer>> index, string eventTypeId, EventCatalogConsumer consumer)
-    {
-        if (!index.TryGetValue(eventTypeId, out var consumers))
-        {
-            consumers = [];
-            index[eventTypeId] = consumers;
-        }
-
-        if (!consumers.Exists(existing => existing.Type == consumer.Type && existing.Id == consumer.Id))
-        {
-            consumers.Add(consumer);
-        }
-    }
 }
