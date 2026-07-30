@@ -29,7 +29,8 @@ builder.Services.AddChronicleMcpConnection();
 builder.Services
     .AddMcpServer()
     .WithStdioServerTransport()
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithPromptsFromAssembly();
 
 var host = builder.Build();
 await host.RunAsync();
