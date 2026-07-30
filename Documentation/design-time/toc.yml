@@ -1,5 +1,11 @@
 - name: Overview
   href: index.md
+- name: Describe the system
+  href: describe-system.md
+- name: Suggest the next event types
+  href: suggest-next-event-types.md
+- name: Ad-hoc projection
+  href: ad-hoc-projection.md
 - name: Describe an event type
   href: describe-event-type.md
 - name: Read-model scaffolding

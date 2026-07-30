@@ -69,7 +69,7 @@ You can see this in action in the [mcp.json](./.vscode/mcp.json) in this reposit
 
 **Configuration is optional.** The MCP server works out of the box with sensible defaults suitable for local development:
 
-- **Connection String:** `chronicle://host.docker.internal:35000/?disableTls=true`
+- **Connection String:** `chronicle://host.docker.internal:35000`
 - **Credentials:** Development client ID (`chronicle-dev-client`) and secret (`chronicle-dev-secret`)
 
 If you need to customize any settings, the MCP server can be configured entirely on its own and is also compatible with the
@@ -88,7 +88,7 @@ they use the `Cratis__Chronicle__Mcp__` prefix:
 
 | Option | Environment variable | Description |
 | ------ | -------------------- | ----------- |
-| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000/?disableTls=true`. |
+| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000`. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from (defaults to the active context). |
 | `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Set to `false` to ignore `~/.cratis/config.json` entirely. |
 | `ClientId` / `ClientSecret` | `Cratis__Chronicle__Mcp__ClientId` / `...__ClientSecret` | Client credentials for authentication. Defaults to development credentials if not specified. |
@@ -135,11 +135,16 @@ store's real schema. See the [Documentation](./Documentation/index.md) folder fo
 
 | Tool | Description |
 | ---- | ----------- |
+| `describe_system` | Deduce what the system in an event store is and is for — entities, lifecycles, read surfaces, automations — with narrative guidance for telling its story. |
+| `suggest_next_event_types` | Find lifecycle gaps and suggest the event types to introduce next, each grounded in the gap it closes. |
+| `run_ad_hoc_projection` | Fold events into per-event-source instances on demand (AutoMap semantics) — answer "show all X with all details" without registering anything. |
 | `describe_event_type` | Describe an event type's real schema — every property with its JSON and suggested C# type. The grounding primitive for the others. |
 | `scaffold_read_model` | Generate a reviewable read model + model-bound projection from one or more event types, grounded in their schema. |
 | `audit_unconsumed_event_types` | Report event types nothing reads, plus consumers that reference an event type id that no longer exists. |
 | `generate_event_catalog` | Produce a living data dictionary — every event type, its fields, and its consumers. |
 | `explain_causal_trace` | Read an event source's ordered history with correlation and causation, to narrate what happened and why. |
+
+The server also exposes MCP **prompts** — `describe_system`, `suggest_next_event_types`, and `query_system` — that package these workflows for clients that surface prompts (for example as slash commands).
 
 You can ask it things like:
 
@@ -156,6 +161,9 @@ You can ask it things like:
 
 And design-time questions like:
 
+- Describe the system in [put event store here] — and tell me its story
+- What event types should I introduce next for the system in [put event store here]?
+- Show all [put concept here] with all details (runs an ad-hoc projection)
 - Show me all the [put concept here] registered (scaffolds a read model + projection)
 - What fields does the [put event type here] event have?
 - What events are we writing that nothing reads?

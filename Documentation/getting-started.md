@@ -42,6 +42,9 @@ Once the server is connected, your agent can reach the store. Start with the ope
 
 Then try the design-time capabilities, which turn a plain request into a grounded artifact:
 
+- "Describe the system in this event store" → the agent deduces entities and lifecycles with [describe the system](design-time/describe-system.md) and tells the system's story.
+- "Show all employees with all details" → an [ad-hoc projection](design-time/ad-hoc-projection.md) folds the events into current state on demand.
+- "What event types should I introduce next?" → grounded gap findings from [suggest the next event types](design-time/suggest-next-event-types.md).
 - "Show me all the users registered" → the agent resolves the event types, then proposes a read model with [read-model scaffolding](design-time/read-model-scaffolding.md).
 - "What events are we writing that nothing reads?" → an [unconsumed-event audit](design-time/unconsumed-event-audit.md).
 - "Why does this order show as cancelled?" → a [causal trace](design-time/causal-trace.md) of the order's history.

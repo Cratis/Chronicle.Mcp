@@ -2,7 +2,7 @@
 
 Configuration is optional. The server works out of the box with defaults suited to local development:
 
-- **Connection string:** `chronicle://localhost:35000/?disableTls=true`
+- **Connection string:** `chronicle://localhost:35000`
 - **Credentials:** the development client id (`chronicle-dev-client`) and secret (`chronicle-dev-secret`)
 - **Event store / namespace:** `default` / `Default`
 
@@ -25,7 +25,7 @@ All options live under the `Cratis:Chronicle:Mcp` configuration section. As envi
 
 | Option | Environment variable | Description |
 | ------ | -------------------- | ----------- |
-| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000/?disableTls=true`. |
+| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000`. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from. Defaults to the active context. |
 | `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Set to `false` to ignore `~/.cratis/config.json` entirely. |
 | `ClientId` / `ClientSecret` | `Cratis__Chronicle__Mcp__ClientId` / `...__ClientSecret` | Client credentials for authentication. Defaults to development credentials. |

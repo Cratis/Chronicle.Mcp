@@ -2,7 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.Observation;
 using Cratis.Chronicle.Contracts.Projections;
+using Cratis.Chronicle.Contracts.ReadModels;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design;
 
@@ -45,6 +47,71 @@ public static class DesignIntrospection
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         CollectFromLevel(projection.From, projection.Join, projection.RemovedWith, projection.RemovedWithJoin, projection.FromEventProperty, projection.Children, projection.Nested, ids);
         return ids;
+    }
+
+    /// <summary>
+    /// Builds an index from event type id to every projection, reducer, and reactor consuming it.
+    /// </summary>
+    /// <param name="projections">The projection definitions from the store.</param>
+    /// <param name="observers">The observers registered in the namespace.</param>
+    /// <param name="readModels">The read model definitions, used to resolve observer read model names.</param>
+    /// <returns>The consumer index keyed by event type id (case-insensitive).</returns>
+    public static IReadOnlyDictionary<string, IReadOnlyList<EventCatalogConsumer>> BuildConsumerIndex(
+        IEnumerable<ProjectionDefinition> projections,
+        IEnumerable<ObserverInformation> observers,
+        IEnumerable<ReadModelDefinition> readModels)
+    {
+        var readModelByObserverId = readModels
+            .Where(readModel => !string.IsNullOrEmpty(readModel.ObserverIdentifier))
+            .GroupBy(readModel => readModel.ObserverIdentifier, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => ReadModelName(group.First()), StringComparer.Ordinal);
+
+        var index = new Dictionary<string, List<EventCatalogConsumer>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var projection in projections)
+        {
+            var consumer = new EventCatalogConsumer(nameof(ObserverType.Projection), projection.Identifier, string.IsNullOrWhiteSpace(projection.ReadModel) ? null : projection.ReadModel);
+            foreach (var eventTypeId in CollectConsumedEventTypeIds(projection))
+            {
+                Add(index, eventTypeId, consumer);
+            }
+        }
+
+        foreach (var observer in observers.Where(observer => observer.Type != ObserverType.Projection))
+        {
+            var readModel = readModelByObserverId.TryGetValue(observer.Id, out var name) ? name : null;
+            var consumer = new EventCatalogConsumer(observer.Type.ToString(), observer.Id, readModel);
+            foreach (var eventTypeId in (observer.EventTypes ?? []).Select(eventType => eventType.Id).Where(id => !string.IsNullOrEmpty(id)))
+            {
+                Add(index, eventTypeId, consumer);
+            }
+        }
+
+        return index.ToDictionary(entry => entry.Key, entry => (IReadOnlyList<EventCatalogConsumer>)entry.Value, StringComparer.OrdinalIgnoreCase);
+    }
+
+    static string? ReadModelName(ReadModelDefinition readModel)
+    {
+        if (!string.IsNullOrWhiteSpace(readModel.DisplayName))
+        {
+            return readModel.DisplayName;
+        }
+
+        return string.IsNullOrWhiteSpace(readModel.ContainerName) ? null : readModel.ContainerName;
+    }
+
+    static void Add(Dictionary<string, List<EventCatalogConsumer>> index, string eventTypeId, EventCatalogConsumer consumer)
+    {
+        if (!index.TryGetValue(eventTypeId, out var consumers))
+        {
+            consumers = [];
+            index[eventTypeId] = consumers;
+        }
+
+        if (!consumers.Exists(existing => existing.Type == consumer.Type && existing.Id == consumer.Id))
+        {
+            consumers.Add(consumer);
+        }
     }
 
     static void CollectFromLevel(
