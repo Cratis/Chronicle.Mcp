@@ -64,7 +64,7 @@ public static class ChronicleMcpServiceCollectionExtensions
             loggerFactory,
             lifetime.ApplicationStopping,
             loggerFactory.CreateLogger<ChronicleConnection>(),
-            connectionString.DisableTls,
+            connectionString.SkipTlsValidation,
             connectionString.CertificatePath,
             connectionString.CertificatePassword,
             tokenProvider,
@@ -93,7 +93,7 @@ public static class ChronicleMcpServiceCollectionExtensions
             connectionString.ServerAddress,
             connectionString.Username ?? string.Empty,
             connectionString.Password ?? string.Empty,
-            connectionString.DisableTls,
+            connectionString.SkipTlsValidation,
             loggerFactory.CreateLogger<OAuthTokenProvider>());
 #pragma warning restore CA2000
 

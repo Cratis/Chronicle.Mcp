@@ -34,7 +34,7 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
     /// </summary>
     public const string ConnectionStringEnvVar = "CHRONICLE_CONNECTION_STRING";
 
-    const string DefaultConnectionString = "chronicle://localhost:35000/?disableTls=true";
+    const string DefaultConnectionString = "chronicle://localhost:35000";
     const string Scheme = "chronicle://";
 
     readonly McpServerOptions _options = options.Value;
