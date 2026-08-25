@@ -46,6 +46,7 @@ permissions:
 jobs:
   dotnet-x64:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -69,6 +70,7 @@ jobs:
 
   dotnet-arm64:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
       - name: Checkout code
@@ -92,6 +94,7 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: [dotnet-x64, dotnet-arm64]
     outputs:
       version: ${{ steps.release.outputs.version }}
@@ -112,6 +115,7 @@ jobs:
   publish-docker-production:
     if: needs.release.outputs.publish == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: [release]
 
     steps:
@@ -169,6 +173,7 @@ jobs:
     # and failing on those would make this job noise that everyone learns to ignore.
     if: always() && needs.release.result == 'success' && contains(fromJSON('["no-label", "error"]'), needs.release.outputs.reason)
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     needs: [release]
 
     steps:
