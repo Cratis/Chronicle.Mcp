@@ -297,3 +297,6 @@ Benchmarks/results
 
 vite.*.js
 vite*.map
+
+# Local AI work artifacts (plans, handovers, session notes) — never tracked
+.ai-work/
