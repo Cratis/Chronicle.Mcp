@@ -11,7 +11,7 @@ namespace Cratis.Chronicle.Mcp.Configuration;
 /// </summary>
 /// <remarks>
 /// Resolution precedence for every value is: explicit <see cref="McpServerOptions"/> first, then the
-/// matching environment variable, then the active CLI context from <c>~/.cratis/config.json</c>
+/// matching environment variable, then the active CLI context from <c language="csharp">~/.cratis/config.json</c>
 /// (when <see cref="McpServerOptions.UseCliConfiguration"/> is enabled), and finally a built-in
 /// development default. This keeps the MCP server compatible with the Cratis CLI while still allowing
 /// it to be configured entirely on its own.

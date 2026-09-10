@@ -3,7 +3,7 @@
 
 using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.EventTypes;
 using Cratis.Chronicle.Contracts.Projections;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
@@ -48,9 +48,9 @@ public static class ReadModelDesignTools
             return new ReadModelScaffold(readModelName, codeNamespace, null, [], [], [], [], notes);
         }
 
-        var registrations = (await services.EventTypes.GetAllRegistrations(new GetAllEventTypesRequest { EventStore = resolvedEventStore })).ToList();
+        var registrations = QueryResults.Unwrap(await services.EventTypes.AllEventTypes(new AllEventTypesRequest { EventStore = resolvedEventStore })).ToList();
 
-        var resolved = new List<EventTypeRegistration>();
+        var resolved = new List<EventTypeDetailsResponse>();
         var unresolved = new List<string>();
         foreach (var name in requested)
         {

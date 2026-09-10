@@ -1,8 +1,6 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Cratis.Chronicle.Contracts.Jobs;
-
 namespace Cratis.Chronicle.Mcp.Tools.Jobs;
 
 /// <summary>
@@ -12,10 +10,10 @@ namespace Cratis.Chronicle.Mcp.Tools.Jobs;
 /// <param name="Error">The job error, if the job was not found or invalid.</param>
 public record JobResult(
     JobDescriptor? Job,
-    JobError? Error)
+    JobErrorDescriptor? Error)
 {
     /// <summary>
     /// Gets whether the result contains an error.
     /// </summary>
-    public bool HasError => Error.HasValue;
+    public bool HasError => Error is not null;
 }

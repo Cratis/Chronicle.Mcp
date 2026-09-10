@@ -9,7 +9,7 @@ namespace Cratis.Chronicle.Mcp.Configuration;
 /// <remarks>
 /// These options let the MCP server be configured independently of the Cratis CLI. When a value
 /// here is left unset, the corresponding value is resolved from the CLI configuration at
-/// <c>~/.cratis/config.json</c> (when <see cref="UseCliConfiguration"/> is enabled), then from
+/// <c language="csharp">~/.cratis/config.json</c> (when <see cref="UseCliConfiguration"/> is enabled), then from
 /// environment variables, and finally from built-in development defaults.
 /// </remarks>
 public class McpServerOptions
@@ -18,7 +18,7 @@ public class McpServerOptions
     /// Gets or sets the connection string for the Chronicle server.
     /// </summary>
     /// <remarks>
-    /// When not set, the connection string is resolved from the <c>CHRONICLE_CONNECTION_STRING</c>
+    /// When not set, the connection string is resolved from the <c language="csharp">CHRONICLE_CONNECTION_STRING</c>
     /// environment variable, then from the active CLI context, and finally defaults to a local
     /// development server.
     /// </remarks>
@@ -28,13 +28,13 @@ public class McpServerOptions
     /// Gets or sets the name of the CLI context to read connection details from.
     /// </summary>
     /// <remarks>
-    /// When not set, the active context from <c>~/.cratis/config.json</c> is used.
+    /// When not set, the active context from <c language="csharp">~/.cratis/config.json</c> is used.
     /// </remarks>
     public string? Context { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether to fall back to the Cratis CLI configuration
-    /// at <c>~/.cratis/config.json</c> for any value not explicitly configured here.
+    /// at <c language="csharp">~/.cratis/config.json</c> for any value not explicitly configured here.
     /// </summary>
     public bool UseCliConfiguration { get; set; } = true;
 

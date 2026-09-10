@@ -4,9 +4,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Auditing;
-using Cratis.Chronicle.Contracts.Events;
-using Cratis.Chronicle.Contracts.EventSequences;
+using Cratis.Chronicle.Contracts.Sequences;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -46,22 +44,16 @@ public static class CausalTraceTools
         var resolvedEventStore = configuration.ResolveEventStore(eventStore);
         var resolvedNamespace = configuration.ResolveNamespace(@namespace);
 
-        var request = new GetForEventSourceIdAndEventTypesRequest
+        var request = new ForEventSourceIdAndEventTypesRequest
         {
             EventStore = resolvedEventStore,
             Namespace = resolvedNamespace,
             EventSequenceId = eventSequenceId,
-            EventSourceId = eventSourceId
+            EventSourceId = eventSourceId,
+            EventTypeIds = ToEventTypeIds(eventType)
         };
 
-        foreach (var parsed in ParseEventTypes(eventType))
-        {
-            request.EventTypes.Add(parsed);
-        }
-
-        var response = await services.EventSequences.GetForEventSourceIdAndEventTypes(request);
-
-        var events = response.Events
+        var events = QueryResults.Unwrap(await services.Sequences.ForEventSourceIdAndEventTypes(request))
             .OrderBy(evt => evt.Context.SequenceNumber)
             .Select(ToCausalEvent)
             .ToList();
@@ -69,7 +61,7 @@ public static class CausalTraceTools
         return new CausalTrace(resolvedEventStore, resolvedNamespace, eventSequenceId, eventSourceId, events.Count, events);
     }
 
-    static CausalEvent ToCausalEvent(AppendedEvent evt)
+    static CausalEvent ToCausalEvent(AppendedEventResponse evt)
     {
         var context = evt.Context;
         return new CausalEvent(
@@ -83,35 +75,29 @@ public static class CausalTraceTools
             TryParse(evt.Content));
     }
 
-    static CausedByDescriptor? ToCausedBy(Cratis.Chronicle.Contracts.Identities.Identity? identity) =>
+    static CausedByDescriptor? ToCausedBy(Cratis.Chronicle.Contracts.Sequences.Identity? identity) =>
         identity is null
             ? null
             : new CausedByDescriptor(identity.Subject ?? string.Empty, identity.Name ?? string.Empty, identity.UserName ?? string.Empty);
 
-    static CausationEntry ToCausationEntry(Causation causation) =>
+    static CausationEntry ToCausationEntry(Cratis.Chronicle.Contracts.Sequences.Causation causation) =>
         new(
             causation.Type ?? string.Empty,
             causation.Occurred,
             causation.Properties is null ? new Dictionary<string, string>() : new Dictionary<string, string>(causation.Properties));
 
-    static IEnumerable<EventType> ParseEventTypes(string? input)
+    static string? ToEventTypeIds(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))
         {
-            return [];
+            return null;
         }
 
-        return input
+        // The contracts narrow on comma-separated event type identifiers; a
+        // generation suffix on an entry ('Type+2') is not part of the identifier.
+        return string.Join(',', input
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(entry =>
-            {
-                var parts = entry.Split('+');
-                return new EventType
-                {
-                    Id = parts[0],
-                    Generation = parts.Length > 1 && uint.TryParse(parts[1], out var generation) ? generation : 1u
-                };
-            });
+            .Select(entry => entry.Split('+')[0]));
     }
 
     static JsonElement? TryParse(string? content)

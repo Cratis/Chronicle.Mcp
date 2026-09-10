@@ -3,7 +3,7 @@
 
 using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.EventTypes;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -35,10 +35,10 @@ public static class SchemaTools
         [Description("The optional specific generation to describe. The latest generation is used when omitted.")] uint? generation = null,
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null)
     {
-        var registrations = await services.EventTypes.GetAllRegistrations(new GetAllEventTypesRequest
+        var registrations = QueryResults.Unwrap(await services.EventTypes.AllEventTypes(new AllEventTypesRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore)
-        });
+        }));
 
         var registration = DesignIntrospection.ResolveRegistration(registrations, eventType, generation);
         if (registration is null)
@@ -52,7 +52,7 @@ public static class SchemaTools
             registration.Type.Tombstone,
             registration.Owner.ToString(),
             registration.Source.ToString(),
-            string.IsNullOrEmpty(registration.EventStore) ? null : registration.EventStore,
+            configuration.ResolveEventStore(eventStore),
             EventSchemaParser.Parse(registration.Schema));
     }
 }

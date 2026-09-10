@@ -4,8 +4,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
-using Cratis.Chronicle.Contracts.EventSequences;
+using Cratis.Chronicle.Contracts.Sequences;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -45,35 +44,32 @@ public static class EventTools
         [Description("An optional event source id to filter by.")] string? eventSourceId = null,
         [Description("An optional comma-separated event type filter (e.g. UserRegistered or UserRegistered+1).")] string? eventType = null)
     {
-        var request = new GetFromEventSequenceNumberRequest
+        var request = new FromSequenceNumberRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore),
             Namespace = configuration.ResolveNamespace(@namespace),
             EventSequenceId = eventSequenceId,
             FromEventSequenceNumber = from,
-            ToEventSequenceNumber = to,
-            EventSourceId = eventSourceId
+            EventSourceId = eventSourceId,
+            EventTypeIds = ToEventTypeIds(eventType)
         };
 
-        foreach (var parsed in ParseEventTypes(eventType))
-        {
-            request.EventTypes.Add(parsed);
-        }
+        var response = QueryResults.Unwrap(await services.Sequences.FromSequenceNumber(request));
 
-        var response = await services.EventSequences.GetEventsFromEventSequenceNumber(request);
-
-        return response.Events.Select(evt =>
-        {
-            var context = evt.Context;
-            return new EventDescriptor(
-                context.SequenceNumber,
-                context.EventType?.Id ?? string.Empty,
-                context.EventType?.Generation ?? 0,
-                context.EventSourceId,
-                (DateTimeOffset?)context.Occurred,
-                context.CorrelationId,
-                TryParse(evt.Content));
-        });
+        return response
+            .Where(evt => !to.HasValue || evt.Context.SequenceNumber <= to.Value)
+            .Select(evt =>
+            {
+                var context = evt.Context;
+                return new EventDescriptor(
+                    context.SequenceNumber,
+                    context.EventType?.Id ?? string.Empty,
+                    context.EventType?.Generation ?? 0,
+                    context.EventSourceId,
+                    (DateTimeOffset?)context.Occurred,
+                    context.CorrelationId,
+                    TryParse(evt.Content));
+            });
     }
 
     /// <summary>
@@ -98,41 +94,31 @@ public static class EventTools
         [Description("An optional comma-separated event type filter.")] string? eventType = null,
         [Description("An optional event source id to filter by.")] string? eventSourceId = null)
     {
-        var request = new GetTailSequenceNumberRequest
+        var request = new TailSequenceNumberRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore),
             Namespace = configuration.ResolveNamespace(@namespace),
             EventSequenceId = eventSequenceId,
-            EventSourceId = eventSourceId
+            EventSourceId = eventSourceId,
+            EventTypeIds = ToEventTypeIds(eventType)
         };
 
-        foreach (var parsed in ParseEventTypes(eventType))
-        {
-            request.EventTypes.Add(parsed);
-        }
-
-        var response = await services.EventSequences.GetTailSequenceNumber(request);
+        var response = QueryResults.Unwrap(await services.Sequences.TailSequenceNumber(request));
         return response.SequenceNumber;
     }
 
-    static IEnumerable<EventType> ParseEventTypes(string? input)
+    static string? ToEventTypeIds(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))
         {
-            return [];
+            return null;
         }
 
-        return input
+        // The contracts narrow on comma-separated event type identifiers; a
+        // generation suffix on an entry ('Type+2') is not part of the identifier.
+        return string.Join(',', input
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(entry =>
-            {
-                var parts = entry.Split('+');
-                return new EventType
-                {
-                    Id = parts[0],
-                    Generation = parts.Length > 1 && uint.TryParse(parts[1], out var generation) ? generation : 1u
-                };
-            });
+            .Select(entry => entry.Split('+')[0]));
     }
 
     static JsonElement? TryParse(string? content)

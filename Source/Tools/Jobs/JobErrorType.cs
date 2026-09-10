@@ -4,7 +4,13 @@
 namespace Cratis.Chronicle.Mcp.Tools.Jobs;
 
 /// <summary>
-/// Error information when a job is not found or invalid.
+/// The types of job errors that can occur when resolving a job.
 /// </summary>
-/// <param name="Error">The type of job error (NotFound).</param>
-public record JobErrorDescriptor(JobErrorType Error);
+public enum JobErrorType
+{
+    /// <summary>No error.</summary>
+    None = 0,
+
+    /// <summary>The job was not found.</summary>
+    NotFound = 1
+}

@@ -3,7 +3,7 @@
 
 using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.EventTypes;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -29,16 +29,16 @@ public static class EventTypeTools
         ChronicleConnectionConfiguration configuration,
         [Description("The event store to get event types from. Defaults to the configured event store.")] string? eventStore = null)
     {
-        var registrations = await services.EventTypes.GetAllRegistrations(new GetAllEventTypesRequest
+        var result = await services.EventTypes.AllEventTypes(new AllEventTypesRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore)
         });
 
-        return registrations.Select(registration => new EventTypeDescriptor(
-            registration.Type.Id,
-            registration.Type.Generation,
-            registration.Type.Tombstone,
-            registration.Owner.ToString(),
-            registration.Source.ToString()));
+        return QueryResults.Unwrap(result).Select(eventType => new EventTypeDescriptor(
+            eventType.Type.Id,
+            eventType.Type.Generation,
+            eventType.Type.Tombstone,
+            eventType.Owner.ToString(),
+            eventType.Source.ToString()));
     }
 }

@@ -7,11 +7,11 @@ using System.Text.Json.Serialization;
 namespace Cratis.Chronicle.Mcp.Configuration;
 
 /// <summary>
-/// Reads the Cratis CLI configuration stored in the user's home directory under <c>.cratis</c>.
+/// Reads the Cratis CLI configuration stored in the user's home directory under <c language="csharp">.cratis</c>.
 /// </summary>
 /// <remarks>
-/// The format is compatible with the Cratis CLI: named contexts under a <c>contexts</c> dictionary,
-/// with an <c>activeContext</c> pointer. The legacy flat format is also understood so that an MCP
+/// The format is compatible with the Cratis CLI: named contexts under a <c language="csharp">contexts</c> dictionary,
+/// with an <c language="csharp">activeContext</c> pointer. The legacy flat format is also understood so that an MCP
 /// server can read configurations written by older CLI versions.
 /// </remarks>
 public class ChronicleCliConfiguration
@@ -56,7 +56,7 @@ public class ChronicleCliConfiguration
     /// <param name="key">The cache key to derive the file path from.</param>
     /// <returns>The full path to the token cache file.</returns>
     /// <remarks>
-    /// The key should uniquely identify the context and credentials (e.g. <c>"{contextName}_{clientId}"</c>).
+    /// The key should uniquely identify the context and credentials (e.g. <c language="csharp">"{contextName}_{clientId}"</c>).
     /// This matches the CLI so tokens are shared between the CLI and the MCP server.
     /// </remarks>
     public static string GetTokenCachePath(string key)

@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
+using Cratis.Chronicle.Contracts.Namespaces;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -23,8 +24,8 @@ public static class EventStoreTools
     [Description("Lists all event stores registered on the Chronicle server. Use to discover valid event store names.")]
     public static async Task<IEnumerable<EventStoreDescriptor>> ListEventStores(IServices services)
     {
-        var eventStores = await services.EventStores.GetEventStores();
-        return eventStores.Select(name => new EventStoreDescriptor(name));
+        var result = await services.EventStores.AllEventStores();
+        return QueryResults.Unwrap(result).Select(eventStore => new EventStoreDescriptor(eventStore.Name));
     }
 
     /// <summary>
@@ -41,10 +42,10 @@ public static class EventStoreTools
         ChronicleConnectionConfiguration configuration,
         [Description("The event store to list namespaces for. Defaults to the configured event store.")] string? eventStore = null)
     {
-        var namespaces = await services.Namespaces.GetNamespaces(new GetNamespacesRequest
+        var result = await services.Namespaces.AllNamespaces(new AllNamespacesRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore)
         });
-        return namespaces.Select(name => new NamespaceDescriptor(name));
+        return QueryResults.Unwrap(result).Select(@namespace => new NamespaceDescriptor(@namespace.Name));
     }
 }

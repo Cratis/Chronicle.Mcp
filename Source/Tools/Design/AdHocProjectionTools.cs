@@ -4,8 +4,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
-using Cratis.Chronicle.Contracts.EventSequences;
+using Cratis.Chronicle.Contracts.Sequences;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -60,23 +59,19 @@ public static class AdHocProjectionTools
         var foldTypes = Split(eventTypes);
         var removalTypes = Split(removedWith);
 
-        var request = new GetFromEventSequenceNumberRequest
+        var request = new FromSequenceNumberRequest
         {
             EventStore = resolvedEventStore,
             Namespace = resolvedNamespace,
             EventSequenceId = eventSequenceId,
             FromEventSequenceNumber = 0,
-            EventSourceId = string.IsNullOrWhiteSpace(eventSourceId) ? null : eventSourceId
+            EventSourceId = string.IsNullOrWhiteSpace(eventSourceId) ? null : eventSourceId,
+            EventTypeIds = string.Join(',', foldTypes.Concat(removalTypes))
         };
 
-        foreach (var eventTypeId in foldTypes.Concat(removalTypes))
-        {
-            request.EventTypes.Add(new EventType { Id = eventTypeId, Generation = 1u });
-        }
+        var response = QueryResults.Unwrap(await services.Sequences.FromSequenceNumber(request));
 
-        var response = await services.EventSequences.GetEventsFromEventSequenceNumber(request);
-
-        var events = response.Events.Select(evt => new AdHocEvent(
+        var events = response.Select(evt => new AdHocEvent(
             evt.Context.EventSourceId,
             evt.Context.EventType?.Id ?? string.Empty,
             evt.Context.SequenceNumber,

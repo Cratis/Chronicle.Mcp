@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Globalization;
-using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.EventTypes;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design;
 
@@ -18,7 +18,7 @@ public static class ReadModelScaffolder
     /// <param name="registrations">The resolved event type registrations to draw fields from.</param>
     /// <param name="notes">A collection that receives notes about type conflicts or skipped fields.</param>
     /// <returns>The chosen fields, in first-seen order.</returns>
-    public static IReadOnlyList<ScaffoldedField> CollectFields(IReadOnlyList<EventTypeRegistration> registrations, ICollection<string> notes)
+    public static IReadOnlyList<ScaffoldedField> CollectFields(IReadOnlyList<EventTypeDetailsResponse> registrations, ICollection<string> notes)
     {
         var fields = new List<ScaffoldedField>();
         var seen = new Dictionary<string, ScaffoldedField>(StringComparer.OrdinalIgnoreCase);
@@ -57,7 +57,7 @@ public static class ReadModelScaffolder
     /// </summary>
     /// <param name="readModelName">The read model name.</param>
     /// <param name="namespaceName">The C# namespace to place the read model in.</param>
-    /// <param name="eventTypeIds">The event type ids to wire up via <c>[FromEvent&lt;T&gt;]</c>.</param>
+    /// <param name="eventTypeIds">The event type ids to wire up via <c language="csharp">[FromEvent&lt;T&gt;]</c>.</param>
     /// <param name="fields">The read model fields.</param>
     /// <returns>The generated C# source.</returns>
     public static string Generate(string readModelName, string namespaceName, IReadOnlyList<string> eventTypeIds, IReadOnlyList<ScaffoldedField> fields)

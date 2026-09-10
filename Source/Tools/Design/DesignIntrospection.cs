@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.EventTypes;
 using Cratis.Chronicle.Contracts.Observation;
 using Cratis.Chronicle.Contracts.Projections;
 using Cratis.Chronicle.Contracts.ReadModels;
@@ -20,8 +21,8 @@ public static class DesignIntrospection
     /// <param name="registrations">The registrations returned from the store.</param>
     /// <param name="name">The event type id/name to resolve (case-insensitive).</param>
     /// <param name="generation">The optional specific generation to resolve; the highest generation is used when null.</param>
-    /// <returns>The matching <see cref="EventTypeRegistration"/>, or null when no event type matches.</returns>
-    public static EventTypeRegistration? ResolveRegistration(IEnumerable<EventTypeRegistration> registrations, string name, uint? generation = null)
+    /// <returns>The matching <see cref="EventTypeDetailsResponse"/>, or null when no event type matches.</returns>
+    public static EventTypeDetailsResponse? ResolveRegistration(IEnumerable<EventTypeDetailsResponse> registrations, string name, uint? generation = null)
     {
         var matches = registrations
             .Where(registration => string.Equals(registration.Type.Id, name, StringComparison.OrdinalIgnoreCase))

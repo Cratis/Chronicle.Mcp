@@ -3,7 +3,7 @@
 
 using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.EventTypes;
 using Cratis.Chronicle.Contracts.Observation;
 using Cratis.Chronicle.Contracts.Projections;
 using Cratis.Chronicle.Contracts.ReadModels;
@@ -41,7 +41,7 @@ public static class EventCatalogTools
         var resolvedEventStore = configuration.ResolveEventStore(eventStore);
         var resolvedNamespace = configuration.ResolveNamespace(@namespace);
 
-        var registrations = (await services.EventTypes.GetAllRegistrations(new GetAllEventTypesRequest { EventStore = resolvedEventStore })).ToList();
+        var registrations = QueryResults.Unwrap(await services.EventTypes.AllEventTypes(new AllEventTypesRequest { EventStore = resolvedEventStore })).ToList();
         var projections = (await services.Projections.GetAllDefinitions(new GetAllDefinitionsRequest { EventStore = resolvedEventStore })).ToList();
         var observers = (await services.Observers.GetObservers(new AllObserversRequest { EventStore = resolvedEventStore, Namespace = resolvedNamespace })).ToList();
         var readModels = (await services.ReadModels.GetDefinitions(new GetDefinitionsRequest { EventStore = resolvedEventStore })).ReadModels;
@@ -59,7 +59,7 @@ public static class EventCatalogTools
                 registration.Type.Tombstone,
                 registration.Owner.ToString(),
                 registration.Source.ToString(),
-                string.IsNullOrEmpty(registration.EventStore) ? null : registration.EventStore,
+                resolvedEventStore,
                 EventSchemaParser.Parse(registration.Schema),
                 Consumers(consumersByEventType, registration.Type.Id)))
             .ToList();

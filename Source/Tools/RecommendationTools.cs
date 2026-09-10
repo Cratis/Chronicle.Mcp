@@ -31,13 +31,13 @@ public static class RecommendationTools
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null)
     {
-        var recommendations = await services.Recommendations.GetRecommendations(new GetRecommendationsRequest
+        var result = await services.Recommendations.GetRecommendations(new GetRecommendationsRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore),
             Namespace = configuration.ResolveNamespace(@namespace)
         });
 
-        return recommendations.Select(recommendation => new RecommendationDescriptor(
+        return QueryResults.Unwrap(result).Select(recommendation => new RecommendationDescriptor(
             recommendation.Id,
             recommendation.Name,
             recommendation.Type,

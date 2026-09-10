@@ -4,7 +4,7 @@
 using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
 using Cratis.Chronicle.Contracts.Jobs;
-using Cratis.Chronicle.Contracts.Primitives;
+using Cratis.Chronicle.Contracts.Queries;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -34,16 +34,17 @@ public static class JobTools
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null,
         [Description("Optional filter by job status. Can be a comma-separated list of statuses (e.g. 'Running,PreparingJob').")] string? status = null)
     {
-        var request = new GetJobsRequest
+        var request = new AllJobsRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore),
             Namespace = configuration.ResolveNamespace(@namespace)
         };
 
-        var jobs = await services.Jobs.GetJobs(request);
+        var result = await services.Jobs.AllJobs(request);
+        EnsureSuccess(result);
 
-        var jobsList = jobs.ToList();
-        var result = jobsList.ConvertAll(ToDescriptor);
+        var jobsList = result.Data.ToList();
+        var descriptors = jobsList.ConvertAll(ToDescriptor);
 
         if (!string.IsNullOrWhiteSpace(status))
         {
@@ -54,11 +55,11 @@ public static class JobTools
 
             if (statusStrings.Count > 0)
             {
-                result = result.Where(j => statusStrings.Contains(j.Status)).ToList();
+                descriptors = descriptors.Where(j => statusStrings.Contains(j.Status)).ToList();
             }
         }
 
-        return result;
+        return descriptors;
     }
 
     /// <summary>
@@ -70,9 +71,8 @@ public static class JobTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <returns>Either a job descriptor with full details including status changes and progress, or a job error.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the job result type is unknown.</exception>
     [McpServerTool(Name = "get_job")]
-    [Description("Gets a specific job by ID. Returns either a job descriptor with full details including status changes and progress, or a job error (NotFound, TypeIsNotAJobStateType, TypeIsNotAssociatedWithAJobType).")]
+    [Description("Gets a specific job by ID. Returns either a job descriptor with full details including status changes and progress, or a job error (NotFound).")]
     public static async Task<JobResult> GetJob(
         IServices services,
         ChronicleConnectionConfiguration configuration,
@@ -80,22 +80,19 @@ public static class JobTools
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null)
     {
-        var request = new GetJobRequest
+        var request = new AllJobsRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore),
-            Namespace = configuration.ResolveNamespace(@namespace),
-            JobId = jobId
+            Namespace = configuration.ResolveNamespace(@namespace)
         };
 
-        var result = await services.Jobs.GetJob(request);
+        var result = await services.Jobs.AllJobs(request);
+        EnsureSuccess(result);
 
-        var oneOfValue = result.Value as OneOf<Job, JobError>;
-        return oneOfValue?.Value switch
-        {
-            Job job => new JobResult(ToDescriptor(job), null),
-            JobError jobError => new JobResult(null, jobError),
-            _ => throw new InvalidOperationException($"Unknown job result type: {result.Value?.GetType().Name}")
-        };
+        var job = result.Data.FirstOrDefault(j => j.Id == jobId);
+        return job is not null
+            ? new JobResult(ToDescriptor(job), null)
+            : new JobResult(null, new JobErrorDescriptor(JobErrorType.NotFound));
     }
 
     /// <summary>
@@ -125,20 +122,25 @@ public static class JobTools
             JobId = jobId
         };
 
+        var result = await services.Jobs.GetJobSteps(request);
+        EnsureSuccess(result);
+
+        var steps = result.Data;
+
         if (!string.IsNullOrWhiteSpace(status))
         {
-            foreach (var statusStr in status
-                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            var statusStrings = status
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => s.Trim().ToUpperInvariant())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (statusStrings.Count > 0)
             {
-                if (Enum.TryParse<JobStepStatus>(statusStr, ignoreCase: true, out var parsed))
-                {
-                    request.Statuses = request.Statuses.Concat([parsed]).ToArray();
-                }
+                steps = steps.Where(s => statusStrings.Contains(s.Status.ToString().ToUpperInvariant())).ToList();
             }
         }
 
-        var jobSteps = await services.Jobs.GetJobSteps(request);
-        return jobSteps.Select(ToStepDescriptor);
+        return steps.Select(ToStepDescriptor);
     }
 
     /// <summary>
@@ -159,7 +161,7 @@ public static class JobTools
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null)
     {
-        await services.Jobs.Stop(new StopJob
+        await services.Jobs.StopJob(new StopJobRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore),
             Namespace = configuration.ResolveNamespace(@namespace),
@@ -185,7 +187,7 @@ public static class JobTools
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null)
     {
-        await services.Jobs.Resume(new ResumeJob
+        await services.Jobs.ResumeJob(new ResumeJobRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore),
             Namespace = configuration.ResolveNamespace(@namespace),
@@ -211,7 +213,7 @@ public static class JobTools
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null)
     {
-        await services.Jobs.Delete(new DeleteJob
+        await services.Jobs.DeleteJob(new DeleteJobRequest
         {
             EventStore = configuration.ResolveEventStore(eventStore),
             Namespace = configuration.ResolveNamespace(@namespace),
@@ -219,13 +221,19 @@ public static class JobTools
         });
     }
 
-    static JobDescriptor ToDescriptor(Job job)
+    static void EnsureSuccess<TData>(QueryResult<TData> result)
     {
-        var statusChanges = (job.StatusChanges ?? Enumerable.Empty<JobStatusChanged>()).Select(scs => new StatusChangeDescriptor(
+        if (!result.IsSuccess)
+        {
+            throw new InvalidOperationException($"Job query failed: {string.Join(", ", result.ExceptionMessages)}");
+        }
+    }
+
+    static JobDescriptor ToDescriptor(JobSummaryResponse job)
+    {
+        var statusChanges = (job.StatusChanges ?? []).Select(scs => new StatusChangeDescriptor(
             scs.Status.ToString(),
-            scs.Occurred,
-            scs.ExceptionMessages ?? [],
-            scs.ExceptionStackTrace ?? string.Empty));
+            scs.Occurred));
 
         return new JobDescriptor(
             job.Id,
@@ -244,13 +252,11 @@ public static class JobTools
                 job.Progress.Message ?? string.Empty));
     }
 
-    static JobStepDescriptor ToStepDescriptor(JobStep jobStep)
+    static JobStepDescriptor ToStepDescriptor(JobStepSummaryResponse jobStep)
     {
         var statusChanges = (jobStep.StatusChanges ?? []).Select(sc => new JobStepStatusChangeDescriptor(
             sc.Status.ToString(),
-            sc.Occurred,
-            sc.ExceptionMessages ?? [],
-            sc.ExceptionStackTrace ?? string.Empty));
+            sc.Occurred));
 
         return new JobStepDescriptor(
             jobStep.Id,

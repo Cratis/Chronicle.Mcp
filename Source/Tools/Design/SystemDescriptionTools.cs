@@ -3,7 +3,8 @@
 
 using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.EventTypes;
+using Cratis.Chronicle.Contracts.Namespaces;
 using Cratis.Chronicle.Contracts.Observation;
 using Cratis.Chronicle.Contracts.ReadModels;
 using Cratis.Chronicle.Mcp.Configuration;
@@ -51,11 +52,11 @@ public static class SystemDescriptionTools
         var resolvedEventStore = configuration.ResolveEventStore(eventStore);
         var resolvedNamespace = configuration.ResolveNamespace(@namespace);
 
-        var registrations = (await services.EventTypes.GetAllRegistrations(new GetAllEventTypesRequest { EventStore = resolvedEventStore })).ToList();
+        var registrations = QueryResults.Unwrap(await services.EventTypes.AllEventTypes(new AllEventTypesRequest { EventStore = resolvedEventStore })).ToList();
         var projections = (await services.Projections.GetAllDefinitions(new Contracts.Projections.GetAllDefinitionsRequest { EventStore = resolvedEventStore })).ToList();
         var observers = (await services.Observers.GetObservers(new AllObserversRequest { EventStore = resolvedEventStore, Namespace = resolvedNamespace })).ToList();
         var readModels = (await services.ReadModels.GetDefinitions(new GetDefinitionsRequest { EventStore = resolvedEventStore })).ReadModels;
-        var namespaces = (await services.Namespaces.GetNamespaces(new GetNamespacesRequest { EventStore = resolvedEventStore })).ToList();
+        var namespaces = QueryResults.Unwrap(await services.Namespaces.AllNamespaces(new AllNamespacesRequest { EventStore = resolvedEventStore })).ToList();
 
         var schemasByEventType = LatestGenerations(registrations)
             .ToDictionary(
@@ -69,22 +70,24 @@ public static class SystemDescriptionTools
         var automations = Automations(consumerIndex);
         var unconsumed = schemasByEventType.Keys
             .Where(eventTypeId => !consumerIndex.ContainsKey(eventTypeId))
-            .Order(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        unconsumed.Sort(StringComparer.OrdinalIgnoreCase);
+
+        var namespaceNames = namespaces.ConvertAll(@namespace => @namespace.Name);
 
         return new SystemDescription(
             resolvedEventStore,
             resolvedNamespace,
-            namespaces,
+            namespaceNames,
             entities,
             readSurfaces,
             automations,
             unconsumed,
-            new SystemStatistics(schemasByEventType.Count, entities.Count, readSurfaces.Count, automations.Count, namespaces.Count),
+            new SystemStatistics(schemasByEventType.Count, entities.Count, readSurfaces.Count, automations.Count, namespaceNames.Count),
             NarrativeGuidance);
     }
 
-    static IEnumerable<EventTypeRegistration> LatestGenerations(IEnumerable<EventTypeRegistration> registrations) =>
+    static IEnumerable<EventTypeDetailsResponse> LatestGenerations(IEnumerable<EventTypeDetailsResponse> registrations) =>
         registrations
             .GroupBy(registration => registration.Type.Id, StringComparer.OrdinalIgnoreCase)
             .Select(group => group.OrderByDescending(registration => registration.Type.Generation).First());

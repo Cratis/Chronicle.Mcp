@@ -4,7 +4,7 @@
 namespace Cratis.Chronicle.Mcp.Configuration;
 
 /// <summary>
-/// Represents a named connection context as stored by the Cratis CLI in <c>~/.cratis/config.json</c>.
+/// Represents a named connection context as stored by the Cratis CLI in <c language="csharp">~/.cratis/config.json</c>.
 /// </summary>
 /// <remarks>
 /// This mirrors the shape written by the CLI so the MCP server can read the same configuration file.

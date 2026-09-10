@@ -22,7 +22,7 @@ public static class ChronicleMcpServiceCollectionExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to add to.</param>
     /// <returns>The <see cref="IServiceCollection"/> for continuation.</returns>
     /// <remarks>
-    /// Unlike the stock <c>AddCratisChronicleConnection</c> extension, this registration wires up an
+    /// Unlike the stock <c language="csharp">AddCratisChronicleConnection</c> extension, this registration wires up an
     /// authenticating token provider (OAuth client credentials or a static API key) based on the
     /// resolved connection string, so the server can authenticate against secured Chronicle servers.
     /// Tokens are cached on disk in the same location as the Cratis CLI for interoperability.

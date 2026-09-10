@@ -3,7 +3,7 @@
 
 using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
+using Cratis.Chronicle.Contracts.EventTypes;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -43,7 +43,7 @@ public static class SystemEvolutionTools
     {
         var resolvedEventStore = configuration.ResolveEventStore(eventStore);
 
-        var registrations = (await services.EventTypes.GetAllRegistrations(new GetAllEventTypesRequest { EventStore = resolvedEventStore })).ToList();
+        var registrations = QueryResults.Unwrap(await services.EventTypes.AllEventTypes(new AllEventTypesRequest { EventStore = resolvedEventStore })).ToList();
 
         var schemasByEventType = registrations
             .GroupBy(registration => registration.Type.Id, StringComparer.OrdinalIgnoreCase)
