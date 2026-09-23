@@ -28,7 +28,7 @@ public static class ReadModelDesignTools
     /// <param name="codeNamespace">The C# namespace to generate the read model into.</param>
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <returns>The scaffold, including grounded fields, existing-projection warnings, and generated code.</returns>
-    [McpServerTool(Name = "scaffold_read_model")]
+    [McpServerTool(Name = "scaffold_read_model", ReadOnly = true, OpenWorld = false)]
     [Description("Generates a reviewable read model + model-bound projection from one or more event types, grounded in the events' real schema (field names and types come from the store, never guesses). Resolve the event types from the user's request first — with list_event_types, describe_event_type, or generate_event_catalog — then pass them here. Surfaces existing projections that already read these events so a duplicate is not created. When none of the requested event types are registered it returns no code and says so rather than fabricating a shape.")]
     public static async Task<ReadModelScaffold> ScaffoldReadModel(
         IServices services,

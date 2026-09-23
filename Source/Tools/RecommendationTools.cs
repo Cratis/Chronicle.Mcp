@@ -23,7 +23,7 @@ public static class RecommendationTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <returns>A concise descriptor for each recommendation.</returns>
-    [McpServerTool(Name = "list_recommendations")]
+    [McpServerTool(Name = "list_recommendations", ReadOnly = true, OpenWorld = false)]
     [Description("Lists active recommendations from the Chronicle server. Recommendations are automated suggestions for maintenance tasks such as rerunning projections or handling schema migrations.")]
     public static async Task<IEnumerable<RecommendationDescriptor>> ListRecommendations(
         IServices services,

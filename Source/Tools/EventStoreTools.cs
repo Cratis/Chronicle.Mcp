@@ -20,7 +20,7 @@ public static class EventStoreTools
     /// </summary>
     /// <param name="services">The Chronicle services.</param>
     /// <returns>Descriptors of all event stores.</returns>
-    [McpServerTool(Name = "list_event_stores")]
+    [McpServerTool(Name = "list_event_stores", ReadOnly = true, OpenWorld = false)]
     [Description("Lists all event stores registered on the Chronicle server. Use to discover valid event store names.")]
     public static async Task<IEnumerable<EventStoreDescriptor>> ListEventStores(IServices services)
     {
@@ -35,7 +35,7 @@ public static class EventStoreTools
     /// <param name="configuration">The connection configuration used to resolve defaults.</param>
     /// <param name="eventStore">The event store to list namespaces for. Defaults to the configured event store.</param>
     /// <returns>Descriptors of all namespaces in the event store.</returns>
-    [McpServerTool(Name = "list_namespaces")]
+    [McpServerTool(Name = "list_namespaces", ReadOnly = true, OpenWorld = false)]
     [Description("Lists all namespaces within an event store. Use to discover valid namespace names.")]
     public static async Task<IEnumerable<NamespaceDescriptor>> ListNamespaces(
         IServices services,

@@ -26,7 +26,7 @@ public static class ObserverTools
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="type">Optional observer type filter: reactor, reducer, projection, or all.</param>
     /// <returns>A concise descriptor for each observer.</returns>
-    [McpServerTool(Name = "list_observers")]
+    [McpServerTool(Name = "list_observers", ReadOnly = true, OpenWorld = false)]
     [Description("Lists observers (projections, reactors, reducers, client observers) in a namespace, with health and replay status. Optionally filter by type.")]
     public static async Task<IEnumerable<ObserverDescriptor>> ListObservers(
         IServices services,
@@ -54,7 +54,7 @@ public static class ObserverTools
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="eventSequenceId">The event sequence to inspect. Defaults to event-log.</param>
     /// <returns>Detailed information about the observer.</returns>
-    [McpServerTool(Name = "get_observer")]
+    [McpServerTool(Name = "get_observer", ReadOnly = true, OpenWorld = false)]
     [Description("Shows detailed information about a specific observer including its type, running state, owner, handled sequence numbers and observed event types.")]
     public static async Task<ObserverDetails> GetObserver(
         IServices services,

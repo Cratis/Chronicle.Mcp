@@ -22,7 +22,7 @@ public static class EventTypeTools
     /// <param name="configuration">The connection configuration used to resolve defaults.</param>
     /// <param name="eventStore">The event store to get event types from. Defaults to the configured event store.</param>
     /// <returns>A concise descriptor for each registered event type.</returns>
-    [McpServerTool(Name = "list_event_types")]
+    [McpServerTool(Name = "list_event_types", ReadOnly = true, OpenWorld = false)]
     [Description("Lists all registered event types in an event store, including their id, generation, owner and source. Use to explore the domain schema.")]
     public static async Task<IEnumerable<EventTypeDescriptor>> ListEventTypes(
         IServices services,

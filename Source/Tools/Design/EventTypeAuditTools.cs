@@ -26,7 +26,7 @@ public static class EventTypeAuditTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace to resolve observers in. Defaults to the configured namespace.</param>
     /// <returns>The audit result listing unconsumed event types and dangling references.</returns>
-    [McpServerTool(Name = "audit_unconsumed_event_types")]
+    [McpServerTool(Name = "audit_unconsumed_event_types", ReadOnly = true, OpenWorld = false)]
     [Description("Cross-references every registered event type against all projections, reducers, and reactors, and reports the event types that nothing consumes (data being written that no read model or reactor reads) plus the inverse: consumers that reference an event type id which no longer exists. Use as a periodic data-debt health check. Read-only introspection — grounded entirely in the store's registry and observer definitions.")]
     public static async Task<EventTypeAuditResult> AuditUnconsumedEventTypes(
         IServices services,

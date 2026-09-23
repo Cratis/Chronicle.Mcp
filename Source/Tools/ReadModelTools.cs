@@ -25,7 +25,7 @@ public static class ReadModelTools
     /// <param name="configuration">The connection configuration used to resolve defaults.</param>
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <returns>A concise descriptor for each read model definition.</returns>
-    [McpServerTool(Name = "list_read_models")]
+    [McpServerTool(Name = "list_read_models", ReadOnly = true, OpenWorld = false)]
     [Description("Lists all read model definitions registered in an event store. The 'queryable' field is false for client-owned read models whose state is stored by the client application rather than the Chronicle server; querying their instances will fail.")]
     public static async Task<IEnumerable<ReadModelDescriptor>> ListReadModels(
         IServices services,
@@ -60,7 +60,7 @@ public static class ReadModelTools
     /// <param name="page">The 0-based page number.</param>
     /// <param name="pageSize">The number of items per page.</param>
     /// <returns>A page of read model instances.</returns>
-    [McpServerTool(Name = "get_read_model_instances")]
+    [McpServerTool(Name = "get_read_model_instances", ReadOnly = true, OpenWorld = false)]
     [Description("Lists the current instances of a read model as JSON, with pagination. Use to inspect the projected state of entities. Fails for client-owned read models (see 'queryable' in list_read_models).")]
     public static async Task<ReadModelInstancesPage> GetReadModelInstances(
         IServices services,

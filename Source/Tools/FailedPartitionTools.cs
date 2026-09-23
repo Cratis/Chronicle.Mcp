@@ -24,7 +24,7 @@ public static class FailedPartitionTools
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="observerId">Optional observer identifier to filter by.</param>
     /// <returns>A concise descriptor for each failed partition.</returns>
-    [McpServerTool(Name = "list_failed_partitions")]
+    [McpServerTool(Name = "list_failed_partitions", ReadOnly = true, OpenWorld = false)]
     [Description("Lists observer partitions that have failed and are paused, including the failure reason and the sequence number where the failure occurred. Use to discover what needs investigation or recovery.")]
     public static async Task<IEnumerable<FailedPartitionDescriptor>> ListFailedPartitions(
         IServices services,

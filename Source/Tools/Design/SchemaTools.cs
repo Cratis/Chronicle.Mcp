@@ -26,7 +26,7 @@ public static class SchemaTools
     /// <param name="generation">The optional specific generation; the latest is used when omitted.</param>
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <returns>The event type's schema, or null when no matching event type is registered.</returns>
-    [McpServerTool(Name = "describe_event_type")]
+    [McpServerTool(Name = "describe_event_type", ReadOnly = true, OpenWorld = false)]
     [Description("Describes a registered event type's real schema — every property with its JSON type and a suggested C# type — read from the store's event type registry. Use this to ground any generated projection, read model, or spec in the event's actual fields instead of guessing. Returns null when the event type is not registered.")]
     public static async Task<EventTypeSchemaDescriptor?> DescribeEventType(
         IServices services,

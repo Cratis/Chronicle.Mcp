@@ -30,7 +30,7 @@ public static class CausalTraceTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <returns>The causal trace for the event source.</returns>
-    [McpServerTool(Name = "explain_causal_trace")]
+    [McpServerTool(Name = "explain_causal_trace", ReadOnly = true, OpenWorld = false)]
     [Description("Reads the ordered event history for one event source together with each event's correlation id and causation chain, so an agent can narrate what happened and why instead of a support engineer reading raw JSON logs. Read-only. Follow correlation ids to relate an event to the wider flow that produced it.")]
     public static async Task<CausalTrace> ExplainCausalTrace(
         IServices services,
