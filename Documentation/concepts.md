@@ -37,6 +37,18 @@ This is worth over-engineering relative to the natural-language parsing itself: 
 
 No design-time capability mutates the store. They need only read access to the event type registry, projection and observer definitions, and namespaces. Generated code is returned as a proposal — the agent shows it to you, and you review it like any other change and apply it to your own project. Projections are cheap to regenerate but should never appear unreviewed in a codebase.
 
+## Which tools change state
+
+Only three tools change anything on the Chronicle server, and all three control jobs. Every other tool — operate-side and design-time alike — only reads.
+
+| Tools | Effect |
+| ----- | ------ |
+| `stop_job`, `resume_job` | Change a job's state. Not destructive — a stopped job can be resumed — and safe to repeat. |
+| `delete_job` | Removes a job. Destructive — the job cannot be recovered — and safe to repeat. |
+| All other tools | Read-only. |
+
+The server declares this to your agent through the standard MCP tool annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, and `openWorldHint`), so an MCP client can let read-only tools run freely and ask you before a tool changes state. Every tool also declares `openWorldHint: false`: it talks only to the Chronicle server you configured, never to other services.
+
 ## Multi-tenancy awareness
 
 Chronicle isolates tenants by namespace. Every tool is scoped to an event store and namespace — defaulting to your configured defaults, overridable per call — so one tenant's event shapes never leak into another's suggestions by accident.

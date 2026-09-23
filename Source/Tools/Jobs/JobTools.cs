@@ -25,7 +25,7 @@ public static class JobTools
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="status">Optional filter by job status. Can be a comma-separated list of statuses.</param>
     /// <returns>A collection of job descriptors.</returns>
-    [McpServerTool(Name = "list_jobs")]
+    [McpServerTool(Name = "list_jobs", ReadOnly = true, OpenWorld = false)]
     [Description("Lists all jobs in a namespace, optionally filtered by status. Returns a collection of job descriptors with status, progress, and metadata.")]
     public static async Task<IEnumerable<JobDescriptor>> ListJobs(
         IServices services,
@@ -71,7 +71,7 @@ public static class JobTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <returns>Either a job descriptor with full details including status changes and progress, or a job error.</returns>
-    [McpServerTool(Name = "get_job")]
+    [McpServerTool(Name = "get_job", ReadOnly = true, OpenWorld = false)]
     [Description("Gets a specific job by ID. Returns either a job descriptor with full details including status changes and progress, or a job error (NotFound).")]
     public static async Task<JobResult> GetJob(
         IServices services,
@@ -105,7 +105,7 @@ public static class JobTools
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="status">Optional filter by job step status. Can be a comma-separated list of statuses.</param>
     /// <returns>A collection of job step descriptors.</returns>
-    [McpServerTool(Name = "get_job_steps")]
+    [McpServerTool(Name = "get_job_steps", ReadOnly = true, OpenWorld = false)]
     [Description("Gets the job steps for a specific job. Returns a collection of job step descriptors with status, progress, and metadata. Optionally filtered by step status.")]
     public static async Task<IEnumerable<JobStepDescriptor>> GetJobSteps(
         IServices services,
@@ -152,7 +152,11 @@ public static class JobTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <returns>Awaitable task.</returns>
-    [McpServerTool(Name = "stop_job")]
+    /// <remarks>
+    /// Changes server state, but is not destructive: a stopped job keeps its state and can be resumed.
+    /// Idempotent: stopping a job that is no longer running has no further effect.
+    /// </remarks>
+    [McpServerTool(Name = "stop_job", ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Stops a specific job. The job will transition to the Stopped status and can be resumed later.")]
     public static async Task StopJob(
         IServices services,
@@ -178,7 +182,11 @@ public static class JobTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <returns>Awaitable task.</returns>
-    [McpServerTool(Name = "resume_job")]
+    /// <remarks>
+    /// Changes server state, but is not destructive: it restarts the remaining steps of a stopped job.
+    /// Idempotent: resuming a job that is already running or completed has no further effect.
+    /// </remarks>
+    [McpServerTool(Name = "resume_job", ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Resumes a specific stopped job. The job must be in the Stopped status.")]
     public static async Task ResumeJob(
         IServices services,
@@ -204,7 +212,11 @@ public static class JobTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <returns>Awaitable task.</returns>
-    [McpServerTool(Name = "delete_job")]
+    /// <remarks>
+    /// Destructive: the job and its progress are removed and cannot be recovered.
+    /// Idempotent: deleting a job that is already being removed, or is gone, has no further effect.
+    /// </remarks>
+    [McpServerTool(Name = "delete_job", ReadOnly = false, Destructive = true, Idempotent = true, OpenWorld = false)]
     [Description("Deletes a specific job. The job will transition to the Removing status and be eventually removed from the system.")]
     public static async Task DeleteJob(
         IServices services,

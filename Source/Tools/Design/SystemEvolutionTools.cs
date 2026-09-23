@@ -33,7 +33,7 @@ public static class SystemEvolutionTools
     /// <param name="eventStore">The event store to analyze. Defaults to the configured event store.</param>
     /// <param name="entity">An optional entity name to scope the suggestions to.</param>
     /// <returns>The <see cref="SystemEvolutionSuggestions"/> with grounded suggestions and refinement guidance.</returns>
-    [McpServerTool(Name = "suggest_next_event_types")]
+    [McpServerTool(Name = "suggest_next_event_types", ReadOnly = true, OpenWorld = false)]
     [Description("Suggests event types to introduce next for the system in an event store. Deduces entities and lifecycles from the registered event type names and schemas, then finds concrete gaps: entities without an explicit creation event, lifecycles with no termination, and creation-time properties no event can ever change. Each suggestion carries the gap it closes and candidate properties from the existing schema. Read-only introspection; refine the results with domain knowledge.")]
     public static async Task<SystemEvolutionSuggestions> SuggestNextEventTypes(
         IServices services,

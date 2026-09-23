@@ -29,7 +29,7 @@ public static class EventCatalogTools
     /// <param name="namespace">The namespace to resolve observers in. Defaults to the configured namespace.</param>
     /// <param name="eventType">An optional single event type id to scope the catalog to.</param>
     /// <returns>A catalog entry per event type.</returns>
-    [McpServerTool(Name = "generate_event_catalog")]
+    [McpServerTool(Name = "generate_event_catalog", ReadOnly = true, OpenWorld = false)]
     [Description("Produces a living data dictionary from the event store: every event type with its fields (from the registered schema) and every projection, reducer, and reactor that consumes it. Ideal onboarding material and grounding for modeling questions. Read-only introspection. Optionally scope to a single event type.")]
     public static async Task<IEnumerable<EventCatalogEntry>> GenerateEventCatalog(
         IServices services,

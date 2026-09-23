@@ -31,7 +31,7 @@ public static class EventTools
     /// <param name="eventSourceId">An optional event source id to filter by.</param>
     /// <param name="eventType">An optional comma-separated event type filter (e.g. UserRegistered or UserRegistered+1).</param>
     /// <returns>The matching events.</returns>
-    [McpServerTool(Name = "get_events")]
+    [McpServerTool(Name = "get_events", ReadOnly = true, OpenWorld = false)]
     [Description("Retrieves events from an event sequence with optional filtering by sequence range, event source id, and event type. Returns event headers and JSON content.")]
     public static async Task<IEnumerable<EventDescriptor>> GetEvents(
         IServices services,
@@ -83,7 +83,7 @@ public static class EventTools
     /// <param name="eventType">An optional comma-separated event type filter.</param>
     /// <param name="eventSourceId">An optional event source id to filter by.</param>
     /// <returns>The tail (highest used) sequence number.</returns>
-    [McpServerTool(Name = "get_tail_sequence_number")]
+    [McpServerTool(Name = "get_tail_sequence_number", ReadOnly = true, OpenWorld = false)]
     [Description("Returns the highest used sequence number (tail) in an event sequence. This is not a total count of events — gaps may exist. Use to gauge how far a sequence has progressed.")]
     public static async Task<ulong> GetTailSequenceNumber(
         IServices services,

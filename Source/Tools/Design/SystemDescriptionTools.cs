@@ -41,7 +41,7 @@ public static class SystemDescriptionTools
     /// <param name="eventStore">The event store to describe. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace to resolve observers in. Defaults to the configured namespace.</param>
     /// <returns>The deduced <see cref="SystemDescription"/>.</returns>
-    [McpServerTool(Name = "describe_system")]
+    [McpServerTool(Name = "describe_system", ReadOnly = true, OpenWorld = false)]
     [Description("Deduces what the system in an event store is and is for. Clusters event types into entities by name, places every event in its entity's lifecycle (creation, mutation, activity, correction, termination), and maps read surfaces and automations. Use it to describe a system in domain language or to tell the story of how the system behaves — the result carries narrative guidance for doing exactly that. Read-only introspection.")]
     public static async Task<SystemDescription> DescribeSystem(
         IServices services,

@@ -22,7 +22,7 @@ public static class ServerTools
     /// This also doubles as a connectivity check: a successful response confirms the MCP server can
     /// reach and authenticate against the Chronicle server.
     /// </remarks>
-    [McpServerTool(Name = "get_server_version")]
+    [McpServerTool(Name = "get_server_version", ReadOnly = true, OpenWorld = false)]
     [Description("Gets version information from the connected Chronicle server. Use to verify connectivity and check the server version and commit.")]
     public static async Task<ServerVersion> GetServerVersion(IServices services)
     {

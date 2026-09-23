@@ -23,3 +23,5 @@ Chronicle runs long-lived work — replays, projections rebuilds, and other main
 ## A note on control operations
 
 `stop_job`, `resume_job`, and `delete_job` change a running system. Have the agent confirm the job id and its current state — with `get_job` — before invoking them, the same care you would take from the CLI.
+
+The server tells your MCP client that these three tools change state, so a client that asks before state-changing calls asks for them. All three are safe to repeat. `stop_job` and `resume_job` are not destructive — a stopped job keeps its progress and can be resumed. `delete_job` is destructive: once a job is removed, it cannot be recovered. See [Which tools change state](../concepts.md#which-tools-change-state).

@@ -22,7 +22,7 @@ public static class ProjectionTools
     /// <param name="configuration">The connection configuration used to resolve defaults.</param>
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <returns>A concise descriptor for each projection definition.</returns>
-    [McpServerTool(Name = "list_projections")]
+    [McpServerTool(Name = "list_projections", ReadOnly = true, OpenWorld = false)]
     [Description("Lists all projection definitions registered in an event store, including the read model they project into and their activity state. Use to audit registered projections.")]
     public static async Task<IEnumerable<ProjectionDescriptor>> ListProjections(
         IServices services,

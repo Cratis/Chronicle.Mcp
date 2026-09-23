@@ -11,6 +11,8 @@ The operate-side tools inspect and operate a live Chronicle system. They are the
 | Observer health | `list_observers`, `get_observer`, `list_failed_partitions`, `list_recommendations` | [Observer health](observer-health.md) |
 | Jobs | `list_jobs`, `get_job`, `get_job_steps`, `stop_job`, `resume_job`, `delete_job` | [Jobs](jobs.md) |
 
+Every operate-side tool is read-only except `stop_job`, `resume_job`, and `delete_job`, which change job state. See [Which tools change state](../concepts.md#which-tools-change-state).
+
 ## Things to ask
 
 - List all event stores.
