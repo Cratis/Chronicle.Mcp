@@ -40,6 +40,7 @@ on:
       - "!Docker/BaseDevelopment/**"
 
 permissions:
+  issues: write
   contents: write
   deployments: write
 
