@@ -5,6 +5,7 @@
 # Build runtime image
 ####################################
 FROM mcr.microsoft.com/dotnet/runtime:10.0-noble
+LABEL io.modelcontextprotocol.server.name="io.github.Cratis/chronicle-mcp"
 ARG CONFIGURATION=Release
 ARG VERSION
 

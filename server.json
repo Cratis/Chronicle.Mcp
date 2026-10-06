@@ -1,0 +1,71 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Cratis/chronicle-mcp",
+  "title": "Cratis Chronicle",
+  "description": "Explore and operate Cratis Chronicle event stores, and design event-sourcing artifacts with AI.",
+  "repository": {
+    "url": "https://github.com/Cratis/Chronicle.Mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://www.cratis.io/chronicle-mcp/",
+  "version": "1.4.0",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "docker.io/cratis/chronicle-mcp:1.4.0",
+      "runtimeHint": "docker",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-i",
+          "description": "Keep stdin open for MCP stdio communication."
+        },
+        {
+          "type": "named",
+          "name": "--rm",
+          "description": "Remove the container when the server exits."
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "Cratis__Chronicle__Mcp__ConnectionString",
+          "description": "Chronicle endpoint reachable from the container; host.docker.internal reaches the host on macOS/Windows.",
+          "format": "string",
+          "default": "chronicle://host.docker.internal:35000"
+        },
+        {
+          "name": "Cratis__Chronicle__Mcp__ClientId",
+          "description": "OAuth client ID; set together with ClientSecret to override development credentials.",
+          "format": "string"
+        },
+        {
+          "name": "Cratis__Chronicle__Mcp__ClientSecret",
+          "description": "OAuth client secret; set together with ClientId to override development credentials.",
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "Cratis__Chronicle__Mcp__ApiKey",
+          "description": "API key for authentication, as an alternative to client credentials.",
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "Cratis__Chronicle__Mcp__EventStore",
+          "description": "Default event store used by tools when none is specified.",
+          "format": "string",
+          "default": "default"
+        },
+        {
+          "name": "Cratis__Chronicle__Mcp__Namespace",
+          "description": "Default namespace used by tools when none is specified.",
+          "format": "string",
+          "default": "Default"
+        }
+      ]
+    }
+  ]
+}

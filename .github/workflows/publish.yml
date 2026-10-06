@@ -164,6 +164,49 @@ jobs:
           build-args: |
             VERSION=${{ needs.release.outputs.version }}
 
+  publish-mcp-registry:
+    if: needs.release.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [release, publish-docker-production]
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install mcp-publisher
+        env:
+          MCP_PUBLISHER_VERSION: "1.8.1"
+          MCP_PUBLISHER_SHA256: "a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc"
+        run: |
+          curl --fail --silent --show-error --location \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" \
+            --output "${RUNNER_TEMP}/mcp-publisher.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  ${RUNNER_TEMP}/mcp-publisher.tar.gz" | sha256sum --check
+          tar -xzf "${RUNNER_TEMP}/mcp-publisher.tar.gz" -C "${RUNNER_TEMP}" mcp-publisher
+          echo "${RUNNER_TEMP}" >> "$GITHUB_PATH"
+
+      - name: Set release version
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          jq --arg version "$VERSION" \
+            '.version = $version | .packages[0].identifier = ("docker.io/cratis/chronicle-mcp:" + $version)' \
+            server.json > server.tmp.json
+          mv server.tmp.json server.json
+
+      - name: Validate registry metadata
+        run: mcp-publisher validate server.json
+
+      - name: Authenticate to MCP Registry
+        run: mcp-publisher login github-oidc
+
+      - name: Publish server to MCP Registry
+        run: mcp-publisher publish server.json
+
   verify-published:
     # A merge that publishes nothing is the failure mode that silently costs a release: the release job
     # succeeds, every publish job is skipped for want of should-publish, and the whole run reports green. Fail

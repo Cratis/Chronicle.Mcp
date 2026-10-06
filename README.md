@@ -15,6 +15,9 @@ Because the server talks to Chronicle directly, it works no matter which Chronic
 The Chronicle MCP server leverages Stdio and is packaged as a container.
 In your tool, configure it using that.
 
+Releases are also listed in the [official MCP Registry](https://registry.modelcontextprotocol.io)
+as `io.github.Cratis/chronicle-mcp`, using the same versioned Docker Hub image.
+
 > Note: You must have a Chronicle server running.
 
 ### Example: VSCode
