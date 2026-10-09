@@ -5,6 +5,7 @@ Configuration is optional. The server works out of the box with defaults suited 
 - **Connection string:** `chronicle://localhost:35000`
 - **Credentials:** the development client id (`chronicle-dev-client`) and secret (`chronicle-dev-secret`)
 - **Event store / namespace:** `default` / `Default`
+- **Deployment profile:** `ReadOnly` — job-control tools are not registered.
 
 You only set values when you need to point at a different server or authenticate against a secured one.
 
@@ -25,6 +26,11 @@ All options live under the `Cratis:Chronicle:Mcp` configuration section. As envi
 
 | Option | Environment variable | Description |
 | ------ | -------------------- | ----------- |
+| `Profile` | `Cratis__Chronicle__Mcp__Profile` | `ReadOnly` (default) or `Mutation`. An unknown value prevents startup. |
+| `Authorization.Principal` | `Cratis__Chronicle__Mcp__Authorization__Principal` | Identity this process acts for. Required and non-blank in `Mutation`. |
+| `Authorization.ExpiresAt` | `Cratis__Chronicle__Mcp__Authorization__ExpiresAt` | Policy expiration as an ISO-8601 timestamp. Required and in the future at mutation startup. |
+| `Authorization.RevokedPrincipals` | `Cratis__Chronicle__Mcp__Authorization__RevokedPrincipals__0` | Indexed list of revoked principals. Defaults to empty. |
+| `Authorization.Grants` | `Cratis__Chronicle__Mcp__Authorization__Grants__0__Principal` (and other grant fields) | Indexed grants naming principal, store, namespace, operations, and targets. Defaults to empty; `Mutation` requires a grant for its principal. |
 | `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000`. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from. Defaults to the active context. |
 | `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Set to `false` to ignore `~/.cratis/config.json` entirely. |
@@ -35,7 +41,11 @@ All options live under the `Cratis:Chronicle:Mcp` configuration section. As envi
 
 Every tool defaults the event store and namespace to these configured values, so you can ask high-level questions and only name a store or namespace when you need a specific one.
 
+See [Deployment profiles](deployment-profiles.md) for the complete grant format, wildcard rules, revocation, and denial codes. Profile and authorization settings do not fall back to CLI contexts or development credentials.
+
 ## Authentication
+
+Keep credentials in environment variables or a secret store, never in `server.json` or a committed `appsettings.json`. Chronicle authentication does not authorize MCP mutations.
 
 The server authenticates the same way the CLI does, and shares its token cache:
 

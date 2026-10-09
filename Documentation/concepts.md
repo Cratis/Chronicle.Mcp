@@ -39,7 +39,7 @@ No design-time capability mutates the store. They need only read access to the e
 
 ## Which tools change state
 
-Only three tools change anything on the Chronicle server, and all three control jobs. Every other tool — operate-side and design-time alike — only reads.
+Only three tools change anything on the Chronicle server, and all three control jobs. They are registered only in the `Mutation` profile and require a matching authorization grant; the default `ReadOnly` profile does not expose them. See [Deployment profiles](deployment-profiles.md). Every other tool — operate-side and design-time alike — only reads.
 
 | Tools | Effect |
 | ----- | ------ |

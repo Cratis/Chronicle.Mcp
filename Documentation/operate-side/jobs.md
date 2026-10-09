@@ -2,6 +2,8 @@
 
 Chronicle runs long-lived work — replays, projections rebuilds, and other maintenance — as jobs. These tools let an agent list jobs, inspect their progress and steps, and control their lifecycle.
 
+The default `ReadOnly` profile exposes job inspection only. `stop_job`, `resume_job`, and `delete_job` require the `Mutation` profile and a matching grant for the principal, event store, namespace, operation, and job ID. See [Deployment profiles](../deployment-profiles.md).
+
 ## Tools
 
 | Tool | Description |
@@ -9,9 +11,9 @@ Chronicle runs long-lived work — replays, projections rebuilds, and other main
 | `list_jobs` | List all jobs in a namespace, optionally filtered by job status. |
 | `get_job` | Get a specific job by id, including full details and status changes. |
 | `get_job_steps` | Get the steps of a specific job, optionally filtered by step status. |
-| `stop_job` | Stop a specific job. It transitions to a stopped status. |
-| `resume_job` | Resume a specific stopped job. |
-| `delete_job` | Delete a specific job. It transitions to a removing status. |
+| `stop_job` | Mutation profile: stop a specific job. It transitions to a stopped status. |
+| `resume_job` | Mutation profile: resume a specific stopped job. |
+| `delete_job` | Mutation profile: delete a specific job. It transitions to a removing status. |
 
 ## Typical flow
 
@@ -24,4 +26,4 @@ Chronicle runs long-lived work — replays, projections rebuilds, and other main
 
 `stop_job`, `resume_job`, and `delete_job` change a running system. Have the agent confirm the job id and its current state — with `get_job` — before invoking them, the same care you would take from the CLI.
 
-The server tells your MCP client that these three tools change state, so a client that asks before state-changing calls asks for them. All three are safe to repeat. `stop_job` and `resume_job` are not destructive — a stopped job keeps its progress and can be resumed. `delete_job` is destructive: once a job is removed, it cannot be recovered. See [Which tools change state](../concepts.md#which-tools-change-state).
+The server tells your MCP client that these three tools change state, so a client that asks before state-changing calls asks for them. All three are safe to repeat. `stop_job` and `resume_job` are not destructive — a stopped job keeps its progress and can be resumed. `delete_job` is destructive and irreversible: once a job is removed, it cannot be recovered. MCP clients should ask the user to confirm the specific job and scope before calling it; the server does not prompt. See [Which tools change state](../concepts.md#which-tools-change-state).

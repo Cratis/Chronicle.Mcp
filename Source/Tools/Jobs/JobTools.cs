@@ -5,6 +5,7 @@ using System.ComponentModel;
 using Cratis.Chronicle.Contracts;
 using Cratis.Chronicle.Contracts.Jobs;
 using Cratis.Chronicle.Contracts.Queries;
+using Cratis.Chronicle.Mcp.Authorization;
 using Cratis.Chronicle.Mcp.Configuration;
 using ModelContextProtocol.Server;
 
@@ -161,7 +162,7 @@ public static class JobTools
     public static async Task StopJob(
         IServices services,
         ChronicleConnectionConfiguration configuration,
-        [Description("The job identifier.")] Guid jobId,
+        [AuthorizationTarget, Description("The job identifier.")] Guid jobId,
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null)
     {
@@ -191,7 +192,7 @@ public static class JobTools
     public static async Task ResumeJob(
         IServices services,
         ChronicleConnectionConfiguration configuration,
-        [Description("The job identifier.")] Guid jobId,
+        [AuthorizationTarget, Description("The job identifier.")] Guid jobId,
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null)
     {
@@ -221,7 +222,7 @@ public static class JobTools
     public static async Task DeleteJob(
         IServices services,
         ChronicleConnectionConfiguration configuration,
-        [Description("The job identifier.")] Guid jobId,
+        [AuthorizationTarget, Description("The job identifier.")] Guid jobId,
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null)
     {
