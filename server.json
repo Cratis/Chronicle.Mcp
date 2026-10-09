@@ -32,12 +32,8 @@
       "environmentVariables": [
         {
           "name": "Cratis__Chronicle__Mcp__Profile",
-          "description": "ReadOnly registers inspection tools only. Mutation adds job control and needs an Authorization policy; see https://www.cratis.io/chronicle-mcp/deployment-profiles/",
+          "description": "Deployment profile. ReadOnly (default) registers inspection tools only. Mutation also needs an Authorization policy: https://www.cratis.io/chronicle-mcp/deployment-profiles/",
           "format": "string",
-          "choices": [
-            "ReadOnly",
-            "Mutation"
-          ],
           "default": "ReadOnly"
         },
         {
