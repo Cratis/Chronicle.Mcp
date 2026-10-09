@@ -28,7 +28,7 @@ public class a_filter : Specs.given.a_policy
     {
         var method = _catalog.Find(operation).Method;
         var tool = McpServerTool.Create(method, (object?)null, new() { Services = _provider });
-        var request = new RequestContext<CallToolRequestParams>(Substitute.For<McpServer>(), new() { Method = RequestMethods.ToolsCall }, new() { Name = operation, Arguments = _arguments }) { Services = _provider };
+        var request = new RequestContext<CallToolRequestParams>(Substitute.For<McpServer>(), new() { Method = RequestMethods.ToolsCall }, new() { Name = operation, Arguments = _arguments }) { Services = _provider, MatchedPrimitive = tool };
 
         return _calls.Filter(tool.InvokeAsync)(request, CancellationToken.None);
     }

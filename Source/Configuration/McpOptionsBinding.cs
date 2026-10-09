@@ -29,9 +29,12 @@ public static class McpOptionsBinding
             throw new InvalidMcpConfiguration($"{SectionPath}:Profile");
         }
 
+        AuthorizationConfigurationShape.Validate(section);
+
         try
         {
-            section.Bind(options);
+            section.Bind(options, binder => binder.ErrorOnUnknownConfiguration = true);
+            EmptyAuthorizationConfiguration.Apply(section, options);
         }
         catch (InvalidOperationException)
         {

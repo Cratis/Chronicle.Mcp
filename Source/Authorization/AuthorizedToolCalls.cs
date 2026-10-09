@@ -28,7 +28,9 @@ public class AuthorizedToolCalls(ToolCatalog catalog, MutationAuthorizer authori
     /// <returns>The filtered handler.</returns>
     public McpRequestHandler<CallToolRequestParams, CallToolResult> Filter(McpRequestHandler<CallToolRequestParams, CallToolResult> next) => async (request, cancellationToken) =>
     {
-        var tool = catalog.Find(request.Params?.Name ?? string.Empty);
+        var tool = request.MatchedPrimitive is McpServerTool registeredTool
+            ? catalog.Find(registeredTool.ProtocolTool.Name)
+            : null;
         if (tool is { IsReadOnly: false })
         {
             if (!authorizer.HasValidTarget(tool, request.Params?.Arguments)) return Deny(DenialCodes.BadRequest, tool.Name);
