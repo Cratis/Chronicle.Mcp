@@ -1,0 +1,11 @@
+// Copyright (c) Cratis. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Cratis.Chronicle.Mcp.Authorization.for_MutationAuthorizer.when_authorizing_resume_job;
+
+public class and_principal_case_differs : given.an_authorizer
+{
+    void Establish() { _settings.Authorization.Principal = Principal.ToUpperInvariant(); }
+    void Because() => _decision = _authorizer.Authorize(_catalog.Find("resume_job"), _arguments, _settings);
+    [Fact] void should_deny_resume_job() => _decision.Code.ShouldEqual(DenialCodes.PolicyInvalid);
+}

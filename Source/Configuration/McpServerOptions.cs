@@ -15,6 +15,16 @@ namespace Cratis.Chronicle.Mcp.Configuration;
 public class McpServerOptions
 {
     /// <summary>
+    /// Gets or sets the deployment profile. Defaults to read-only.
+    /// </summary>
+    public DeploymentProfile Profile { get; set; } = DeploymentProfile.ReadOnly;
+
+    /// <summary>
+    /// Gets or sets the policy required by the mutation profile.
+    /// </summary>
+    public MutationAuthorization Authorization { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets the connection string for the Chronicle server.
     /// </summary>
     /// <remarks>
