@@ -33,7 +33,12 @@ public static class McpOptionsBinding
 
         try
         {
-            section.Bind(options, binder => binder.ErrorOnUnknownConfiguration = true);
+            // Only the authorization policy is bound strictly: a dropped value there could fail open, while an
+            // obsolete connection setting (such as the removed ManagementPort) must not stop an upgraded server.
+            section.Bind(options);
+            var authorization = new MutationAuthorization();
+            section.GetSection(nameof(McpServerOptions.Authorization)).Bind(authorization, binder => binder.ErrorOnUnknownConfiguration = true);
+            options.Authorization = authorization;
         }
         catch (InvalidOperationException)
         {
