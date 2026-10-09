@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.Cratis/chronicle-mcp",
   "title": "Cratis Chronicle",
-  "description": "Explore and operate Cratis Chronicle event stores, and design event-sourcing artifacts with AI.",
+  "description": "Inspect Cratis Chronicle event stores read-only by default; opt-in, authorized job control.",
   "repository": {
     "url": "https://github.com/Cratis/Chronicle.Mcp",
     "source": "github"
@@ -30,6 +30,16 @@
         }
       ],
       "environmentVariables": [
+        {
+          "name": "Cratis__Chronicle__Mcp__Profile",
+          "description": "ReadOnly registers inspection tools only. Mutation adds job control and needs an Authorization policy; see https://www.cratis.io/chronicle-mcp/deployment-profiles/",
+          "format": "string",
+          "choices": [
+            "ReadOnly",
+            "Mutation"
+          ],
+          "default": "ReadOnly"
+        },
         {
           "name": "Cratis__Chronicle__Mcp__ConnectionString",
           "description": "Chronicle endpoint reachable from the container; host.docker.internal reaches the host on macOS/Windows.",
