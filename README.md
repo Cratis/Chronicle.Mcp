@@ -76,6 +76,7 @@ You can see this in action in the [mcp.json](./.vscode/mcp.json) in this reposit
 
 - **Connection String:** `chronicle://host.docker.internal:35000`
 - **Credentials:** Development client ID (`chronicle-dev-client`) and secret (`chronicle-dev-secret`)
+- **Profile:** `ReadOnly` — mutating tools are not listed or callable.
 
 If you need to customize any settings, the MCP server can be configured entirely on its own and is also compatible with the
 [Cratis CLI](https://github.com/Cratis/cli). For any value you do not set explicitly, the server resolves it in this order:
@@ -93,6 +94,8 @@ they use the `Cratis__Chronicle__Mcp__` prefix:
 
 | Option | Environment variable | Description |
 | ------ | -------------------- | ----------- |
+| `Profile` | `Cratis__Chronicle__Mcp__Profile` | `ReadOnly` (default) or `Mutation`; unknown values prevent startup. |
+| `Authorization` | `Cratis__Chronicle__Mcp__Authorization__...` | Mutation policy: principal, expiration, revoked principals, and scoped grants. See [Deployment profiles](./Documentation/deployment-profiles.md). |
 | `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000`. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from (defaults to the active context). |
 | `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Set to `false` to ignore `~/.cratis/config.json` entirely. |
@@ -100,6 +103,8 @@ they use the `Cratis__Chronicle__Mcp__` prefix:
 | `ApiKey` | `Cratis__Chronicle__Mcp__ApiKey` | An API key to authenticate with, as an alternative to client credentials. |
 | `EventStore` | `Cratis__Chronicle__Mcp__EventStore` | The default event store used by tools when none is specified. Defaults to `default`. |
 | `Namespace` | `Cratis__Chronicle__Mcp__Namespace` | The default namespace used by tools when none is specified. Defaults to `Default`. |
+
+Job control requires the `Mutation` profile and a matching grant for the deployment principal, store, namespace, operation, and job ID. A connection string or Chronicle credentials alone never enable mutations. Keep credentials in environment variables or a secret store, never in `server.json` or a committed `appsettings.json`. See [Deployment profiles](./Documentation/deployment-profiles.md) for policy examples and denial codes.
 
 ## Prompts / Tools
 
@@ -132,9 +137,9 @@ store's real schema. See the [Documentation](./Documentation/index.md) folder fo
 | `list_jobs` | List all jobs in a namespace, optionally filtered by job status. |
 | `get_job` | Get a specific job by ID, including full details and status changes. |
 | `get_job_steps` | Get the job steps for a specific job, optionally filtered by step status. |
-| `stop_job` | Stop a specific job (transitions to Stopped status). |
-| `resume_job` | Resume a specific stopped job. |
-| `delete_job` | Delete a specific job (transitions to Removing status). |
+| `stop_job` | Mutation profile: stop a specific job (transitions to Stopped status). |
+| `resume_job` | Mutation profile: resume a specific stopped job. |
+| `delete_job` | Mutation profile: irreversibly delete a specific job (transitions to Removing status). Clients should ask for confirmation; the server does not prompt. |
 
 ### Design-time
 
@@ -162,7 +167,7 @@ You can ask it things like:
 - List all jobs in the [put event store name here] event store
 - Show me job [put job id here] in the [put namespace name here] namespace
 - What steps does job [put job id here] have?
-- Stop / Resume / Delete job [put job id here]
+- Stop / Resume / Delete job [put job id here] (requires an authorized Mutation deployment)
 
 And design-time questions like:
 
@@ -178,7 +183,7 @@ And design-time questions like:
 ## Local development
 
 Using VSCode, the [mcp.json](./.vscode/mcp.json) in the `.vscode` folder of this repository is automatically supported.
-Open it and click the **Start** button:
+Local development defaults to `ReadOnly`. Open it and click the **Start** button:
 
 ![](./images/start.png)
 

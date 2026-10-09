@@ -32,6 +32,8 @@ The server speaks MCP over stdio and ships as a container. Configure your agent 
 
 On macOS and Windows the host machine is reachable from the container at `host.docker.internal`. The connection string is the only value most setups need to change — everything else has a working local-development default. See [Configuration](configuration.md) for the full resolution order and authentication.
 
+This configuration starts in the safe `ReadOnly` profile. You can inspect jobs, but `stop_job`, `resume_job`, and `delete_job` are not listed or callable. To enable authorized job control, configure a [Mutation deployment profile](deployment-profiles.md).
+
 ## Ask your first questions
 
 Once the server is connected, your agent can reach the store. Start with the operate-side capabilities to confirm connectivity:
@@ -52,5 +54,6 @@ Then try the design-time capabilities, which turn a plain request into a grounde
 ## Where to go next
 
 - [Configuration](configuration.md) — connect to a secured server, share the CLI's context, or run without Docker.
+- [Deployment profiles](deployment-profiles.md) — keep read-only access or grant bounded job-control authority.
 - [How it works](concepts.md) — the two modes and why every design-time suggestion is grounded in real schema.
 - [Design-time capabilities](design-time/index.md) — the full set of generative and advisory tools.
