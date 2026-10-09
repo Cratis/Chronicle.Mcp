@@ -24,6 +24,8 @@ Locality, a connection string, and Chronicle credentials never grant MCP mutatio
 
 Keep credentials in environment variables or a secret store. Never put API keys, client secrets, or credential-bearing connection strings in `server.json` or a committed `appsettings.json`. The policy examples below contain no secrets.
 
+Express each authorization list in a single configuration source; a collection or object with both a scalar value (even an empty value) and children is ambiguous and rejected.
+
 ## Configure a mutation policy
 
 All settings live under `Cratis:Chronicle:Mcp`. A mutation deployment refuses to start when:

@@ -26,6 +26,16 @@ public class a_bound_policy : Authorization.Specs.given.a_policy
         _monitor = _bindingProvider.GetRequiredService<IOptionsMonitor<McpServerOptions>>();
     }
 
+    protected void WithChildlessEmpty(string path)
+    {
+        var settings = _root.AsEnumerable().Where(setting => !setting.Key.StartsWith($"{path}:", StringComparison.OrdinalIgnoreCase)).ToArray();
+        _bindingProvider.Dispose();
+        _root = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+        _root[path] = string.Empty;
+        _bindingProvider = new ServiceCollection().AddSingleton(_clock).AddDeploymentPolicy(_root).BuildServiceProvider();
+        _monitor = _bindingProvider.GetRequiredService<IOptionsMonitor<McpServerOptions>>();
+    }
+
     protected Task Start() => _bindingProvider.GetServices<IHostedService>().Single().StartAsync(CancellationToken.None);
 
     void Destroy() => _bindingProvider.Dispose();

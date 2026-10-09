@@ -39,12 +39,7 @@ public static class AuthorizationConfigurationShape
 
     static void ValidateObject(IConfigurationSection section, IReadOnlyDictionary<string, Action<IConfigurationSection>> settings)
     {
-        if (!string.IsNullOrEmpty(section.Value))
-        {
-            throw Invalid(section);
-        }
-
-        foreach (var child in section.GetChildren())
+        foreach (var child in ValidateContainer(section))
         {
             if (!settings.TryGetValue(child.Key, out var validateSetting))
             {
@@ -57,12 +52,7 @@ public static class AuthorizationConfigurationShape
 
     static void ValidateCollection(IConfigurationSection section, Action<IConfigurationSection> validateElement)
     {
-        if (!string.IsNullOrEmpty(section.Value))
-        {
-            throw Invalid(section);
-        }
-
-        foreach (var child in section.GetChildren())
+        foreach (var child in ValidateContainer(section))
         {
             if (!int.TryParse(child.Key, NumberStyles.None, CultureInfo.InvariantCulture, out _))
             {
@@ -71,6 +61,17 @@ public static class AuthorizationConfigurationShape
 
             validateElement(child);
         }
+    }
+
+    static IConfigurationSection[] ValidateContainer(IConfigurationSection section)
+    {
+        var children = section.GetChildren().ToArray();
+        if (!string.IsNullOrEmpty(section.Value) || (section.Value is not null && children.Length > 0))
+        {
+            throw Invalid(section);
+        }
+
+        return children;
     }
 
     static void ValidateScalarElement(IConfigurationSection section)

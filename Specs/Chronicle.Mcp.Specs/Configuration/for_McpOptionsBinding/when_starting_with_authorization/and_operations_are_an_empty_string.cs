@@ -7,7 +7,7 @@ namespace Cratis.Chronicle.Mcp.Configuration.for_McpOptionsBinding.when_starting
 
 public class and_operations_are_an_empty_string : given.a_bound_policy
 {
-    void Establish() => _root["Authorization:Grants:0:Operations"] = string.Empty;
+    void Establish() => WithChildlessEmpty("Authorization:Grants:0:Operations");
     async Task Because() => _error = await Catch.Exception(Start);
     [Fact] void should_fail_policy_validation() => _error.ShouldBeOfExactType<OptionsValidationException>();
     [Fact] void should_bind_no_operations() => _monitor.CurrentValue.Authorization.Grants[0].Operations.ShouldBeEmpty();

@@ -34,7 +34,6 @@ public static class McpOptionsBinding
         try
         {
             section.Bind(options, binder => binder.ErrorOnUnknownConfiguration = true);
-            EmptyAuthorizationConfiguration.Apply(section, options);
         }
         catch (InvalidOperationException)
         {
