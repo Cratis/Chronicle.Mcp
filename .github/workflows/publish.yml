@@ -5,6 +5,14 @@ env:
   DOTNET_X64_CACHE: "dotnet-x64-cache-${{ github.sha }}"
   DOTNET_ARM64_CACHE: "dotnet-arm64-cache-${{ github.sha }}"
 
+# Keep up to 100 pending Publish runs in FIFO order with `queue: max` (Cratis/Workflows#162).
+# The default single pending slot drops the older pending release when a third merge arrives.
+# Runs remain serialized and in-flight releases are never cancelled.
+# Omit `cancel-in-progress`: GitHub rejects it together with `queue: max`.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  queue: max
+
 on:
   workflow_dispatch:
     inputs:
