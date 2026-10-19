@@ -1,3 +1,8 @@
+---
+title: Read-model scaffolding
+description: scaffold_read_model turns Chronicle event types into a reviewable read model and model-bound projection using the events' real schema.
+---
+
 # Read-model scaffolding
 
 `scaffold_read_model` is the flagship design-time capability. It turns a set of event types into a reviewable read model and its model-bound projection — with field names and types taken from the events' real schema, never invented. The output is always a proposal to review, never a silent write into your codebase.

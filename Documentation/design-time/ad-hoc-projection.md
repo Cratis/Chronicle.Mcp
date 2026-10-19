@@ -1,3 +1,8 @@
+---
+title: Ad-hoc projection
+description: run_ad_hoc_projection folds Chronicle events into current state on demand, without registering or persisting a projection.
+---
+
 # Ad-hoc projection
 
 *"Show all employees with all details."* In an event-sourced system, answering that means folding events into current state — and if no projection happens to exist for exactly that question, the answer traditionally requires writing one, deploying it, and waiting for it to catch up. `run_ad_hoc_projection` removes that loop: it materializes the answer on demand, straight from the store, without registering or persisting anything.

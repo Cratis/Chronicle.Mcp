@@ -1,3 +1,8 @@
+---
+title: Design-time capabilities
+description: The Chronicle.Mcp design-time tools turn plain-language requests into read models, projections, audits and catalogs grounded in the store's schema.
+---
+
 # Design-time capabilities
 
 The design-time tools turn a plain-language request into Chronicle artifacts — read models, projections, audits, and catalogs — grounded in the store's real schema. They are read-only against the store and generative against your codebase: nothing is written to the store, and generated code comes back as a proposal you review. See [How it works](../concepts.md) for the principle behind them.

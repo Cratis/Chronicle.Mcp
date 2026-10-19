@@ -1,3 +1,8 @@
+---
+title: Describe an event type
+description: describe_event_type reads an event type's real schema from the Chronicle store, with each property's JSON type and a suggested C# type.
+---
+
 # Describe an event type
 
 `describe_event_type` reads an event type's real schema from the store — every property with its JSON type and a suggested C# type. It is the grounding primitive the other design-time tools build on: any generated projection, read model, or spec starts from the fields the event actually carries, not a guess.

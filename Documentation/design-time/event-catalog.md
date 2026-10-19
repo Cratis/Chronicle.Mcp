@@ -1,3 +1,8 @@
+---
+title: Event catalog
+description: generate_event_catalog builds a living data dictionary of every Chronicle event type, its fields and the observers that consume it.
+---
+
 # Event catalog
 
 `generate_event_catalog` produces a living data dictionary from the event store: every event type, its fields, and every projection, reducer, and reactor that consumes it. Event names are the ubiquitous language of an event-sourced system, and this keeps that language documented and current straight from the store — useful onboarding material for new developers and grounding for any modeling question.

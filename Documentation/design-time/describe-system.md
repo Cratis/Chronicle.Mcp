@@ -1,3 +1,8 @@
+---
+title: Describe the system
+description: describe_system deduces a Chronicle system's entities, lifecycles, read models and automations from its registered event types.
+---
+
 # Describe the system
 
 You inherit an event store — or return to one after six months — and the first question is always the same: *what is this system, and what is it for?* The answer is already in the store. Event names are past-tense facts about subjects, so the names themselves carry which entities exist and what can happen to them. `describe_system` reads that language back out.

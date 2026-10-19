@@ -1,3 +1,8 @@
+---
+title: Causal trace
+description: explain_causal_trace reads one event source's ordered history with correlation ids and causation chains to explain what happened and why.
+---
+
 # Causal trace
 
 `explain_causal_trace` reads the ordered event history of one event source together with each event's correlation id and causation chain, so an agent can narrate *what happened and why* instead of a support engineer reading raw JSON logs. It is the natural-language equivalent of `git blame` for state.
