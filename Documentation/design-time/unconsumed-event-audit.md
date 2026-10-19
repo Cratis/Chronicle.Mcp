@@ -1,3 +1,8 @@
+---
+title: Unconsumed-event audit
+description: audit_unconsumed_event_types finds Chronicle event types nobody consumes and consumers that reference event types that no longer exist.
+---
+
 # Unconsumed-event audit
 
 `audit_unconsumed_event_types` cross-references every registered event type against everything that consumes it — projections, reducers, and reactors — and reports two kinds of silent data debt:

@@ -1,3 +1,8 @@
+---
+title: Suggest the next event types
+description: suggest_next_event_types finds gaps in a Chronicle event model, such as missing creation or termination events, and proposes events to close them.
+---
+
 # Suggest the next event types
 
 A growing event model develops blind spots: an entity that can be created but never removed, a value set once at registration that the business later needs to change, a lifecycle whose beginning is implicit. You usually discover these gaps the hard way — when a feature needs an event that does not exist. `suggest_next_event_types` finds them first.

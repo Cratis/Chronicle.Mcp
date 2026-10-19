@@ -1,3 +1,8 @@
+---
+title: Events
+description: Use the Chronicle.Mcp get_events and get_tail_sequence_number tools to read events and the tail sequence number from an event sequence.
+---
+
 # Events
 
 These tools read from event sequences — the append-only logs at the heart of Chronicle.

@@ -1,3 +1,8 @@
+---
+title: Chronicle MCP Server
+description: Chronicle.Mcp connects an AI agent to a running Chronicle event store over the Model Context Protocol to explore, operate and model it.
+---
+
 # Chronicle MCP Server
 
 The Chronicle MCP server connects an AI agent to a running [Cratis Chronicle](https://github.com/Cratis/Chronicle) event store over the [Model Context Protocol](https://modelcontextprotocol.io). Point your agent at a Chronicle server and it can explore the domain, operate observers and jobs, and turn plain-language requests into Chronicle artifacts — always grounded in the store's real schema.

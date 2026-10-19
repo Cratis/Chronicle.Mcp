@@ -1,3 +1,8 @@
+---
+title: Observer health
+description: Use Chronicle.Mcp tools to check the health of projections, reducers and reactors, find failed partitions and list store recommendations.
+---
+
 # Observer health
 
 Observers — projections, reducers, and reactors — consume event sequences to build read models and trigger side effects. These tools let an agent check their health, find failures, and surface maintenance the store recommends.

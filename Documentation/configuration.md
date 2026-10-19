@@ -1,3 +1,8 @@
+---
+title: Configuration
+description: Configure the Chronicle.Mcp server's connection string, credentials, default event store and namespace, and deployment profile.
+---
+
 # Configuration
 
 Configuration is optional. The server works out of the box with defaults suited to local development:
