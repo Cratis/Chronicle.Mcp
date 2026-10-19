@@ -1,3 +1,8 @@
+---
+title: Jobs
+description: Use Chronicle.Mcp tools to list Chronicle jobs, inspect their progress and steps, and stop, resume or delete them under the Mutation profile.
+---
+
 # Jobs
 
 Chronicle runs long-lived work — replays, projections rebuilds, and other maintenance — as jobs. These tools let an agent list jobs, inspect their progress and steps, and control their lifecycle.

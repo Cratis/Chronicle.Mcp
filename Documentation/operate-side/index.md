@@ -1,3 +1,8 @@
+---
+title: Operating a store
+description: The Chronicle.Mcp operate-side tools let an agent inspect and operate a live Chronicle system, from browsing events to watching observers and managing jobs.
+---
+
 # Operating a store
 
 The operate-side tools inspect and operate a live Chronicle system. They are the natural-language equivalent of running the [Cratis CLI](https://github.com/Cratis/cli) against a store: browse the domain, watch observers, read events, and manage jobs. Every tool defaults the event store and namespace to your [configured defaults](../configuration.md), so you only name a store or namespace when you want a specific one.

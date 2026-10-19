@@ -1,3 +1,8 @@
+---
+title: Exploring the store
+description: Use Chronicle.Mcp tools to list a store's event stores, namespaces, event types, projections and read models, and read their current instances.
+---
+
 # Exploring the store
 
 These tools let an agent walk a Chronicle store's structure — its stores, namespaces, event types, projections, read models, and current instances — to build up a picture of the domain before doing anything else.
