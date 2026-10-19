@@ -1,3 +1,8 @@
+---
+title: How it works
+description: Chronicle.Mcp exposes operate-side and design-time tools over one connection, and design-time output is grounded in the store's real schema.
+---
+
 # How it works
 
 The Chronicle MCP server exposes two kinds of capability over one connection. Understanding the split is the fastest way to know which tool an agent will reach for — and why the design-time tools can be trusted not to make things up.

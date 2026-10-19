@@ -1,3 +1,8 @@
+---
+title: Getting started
+description: Run the Chronicle.Mcp server inside your MCP-capable agent and ask questions about a live Chronicle event store.
+---
+
 # Getting started
 
 By the end of this page you will have the Chronicle MCP server running inside your agent and answering questions about a live Chronicle store.
