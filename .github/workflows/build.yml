@@ -13,11 +13,21 @@ on:
     branches: [ "main" ]
     paths:
       - "Source/**"
+      - "Specs/**"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - "global.json"
+      - ".github/workflows/build.yml"
   pull_request:
     branches:
       - "**"
     paths:
       - "Source/**"
+      - "Specs/**"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - "global.json"
+      - ".github/workflows/build.yml"
 
 jobs:
   dotnet-build:
@@ -36,3 +46,6 @@ jobs:
 
       - name: Build
         run: dotnet build --configuration Release
+
+      - name: Run specifications
+        run: ./Specs/Chronicle.Mcp.Specs/bin/Release/net10.0/Cratis.Chronicle.Mcp.Specs
