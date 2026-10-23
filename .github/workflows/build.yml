@@ -36,3 +36,6 @@ jobs:
 
       - name: Build
         run: dotnet build --configuration Release
+
+      - name: Run specifications
+        run: ./Specs/Chronicle.Mcp.Specs/bin/Release/net10.0/Cratis.Chronicle.Mcp.Specs
