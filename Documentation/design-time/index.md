@@ -5,7 +5,9 @@ description: The Chronicle.Mcp design-time tools turn plain-language requests in
 
 # Design-time capabilities
 
-The design-time tools turn a plain-language request into Chronicle artifacts — read models, projections, audits, and catalogs — grounded in the store's real schema. They are read-only against the store and generative against your codebase: nothing is written to the store, and generated code comes back as a proposal you review. See [How it works](../concepts.md) for the principle behind them.
+Use the design-time tools to understand an event store, review candidate event types, or answer a data question. Choose the task you have; you do not need to run every capability below. They are read-only against the store and generative against your codebase: nothing is written to the store, and generated code comes back as a proposal you review. See [How it works](../concepts.md) for the principle behind them.
+
+If the server is not connected yet, start with [Getting started](../getting-started.md). Confirm the intended store and namespace before asking the agent to read data; read-only access is not a substitute for authorization or permission to share the results.
 
 ## Capabilities
 
@@ -32,13 +34,13 @@ Beyond tools, the server exposes MCP prompts that package whole workflows — cl
 
 ## How an agent combines them
 
-A typical flow chains a few tools. To answer *"Show all employees with all details"* an agent might:
+The capabilities are independent tasks, not a required sequence. When a question spans tasks, the following optional flow shows how they can fit together. To answer *"Show all employees with all details"* an agent might:
 
 1. Understand the system with [describe the system](describe-system.md) — which entities exist and which event types carry which facts.
 2. Fold the relevant event types into current state with an [ad-hoc projection](ad-hoc-projection.md) and present the result.
 3. If the question keeps coming back, propose a permanent read model with [read-model scaffolding](read-model-scaffolding.md).
 
-Because the tools return structured data rather than prose, the agent does the natural-language reasoning while the store supplies the facts.
+The tools return structured data; the agent turns it into prose or a proposal. Registered names and schemas ground that output, but they do not validate the inferred business meaning.
 
 ## Roadmap
 
