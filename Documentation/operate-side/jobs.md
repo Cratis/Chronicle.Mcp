@@ -5,9 +5,27 @@ description: Use Chronicle.Mcp tools to list Chronicle jobs, inspect their progr
 
 # Jobs
 
-Chronicle runs long-lived work — replays, projections rebuilds, and other maintenance — as jobs. These tools let an agent list jobs, inspect their progress and steps, and control their lifecycle.
+Chronicle runs long-lived work, including replays, projection rebuilds, and other maintenance, as jobs. Use Chronicle MCP to find a job, inspect its progress, and see which steps have completed or stopped. You can do that investigation in the default `ReadOnly` profile without enabling job control.
 
-The default `ReadOnly` profile exposes job inspection only. `stop_job`, `resume_job`, and `delete_job` require the `Mutation` profile and a matching grant for the principal, event store, namespace, operation, and job ID. See [Deployment profiles](../deployment-profiles.md).
+Only `stop_job`, `resume_job`, and `delete_job` change job state. They are unavailable in `ReadOnly` and require the `Mutation` profile plus a matching grant for the principal, event store, namespace, operation, and job ID. [Deployment profiles](../deployment-profiles.md) explains how that authority is bounded.
+
+:::danger[Deleting a job is irreversible]
+`delete_job` removes the job; once removed, it cannot be recovered. Stopping a job is different: it keeps its progress and can be resumed. Inspect the job before choosing either action.
+:::
+
+## Typical flow
+
+1. Call `list_jobs` in the event store and namespace you want to inspect. Filter by job status when, for example, you only need failed jobs.
+2. Select a job id and call `get_job`. Its details, progress, and status-change history show what the job is doing and how it reached its current state.
+3. Use `get_job_steps` with that id to examine individual steps. An optional step-status filter helps narrow the result to the work you are investigating.
+
+This inspection can be the whole task. If you need to intervene, continue with the control guidance below; inspection does not require a control call.
+
+## A note on control operations
+
+Before a control call, have the agent use `get_job` to confirm the job id and current state. Confirm the event store and namespace too; tools use your [configured defaults](../configuration.md) if you omit them. MCP clients should ask you to confirm the specific job and scope before calling a control tool. The server does not prompt.
+
+The server marks these three tools as state-changing, so a client that asks before state-changing calls asks for them. All three are safe to repeat, but that does not make deletion reversible. `stop_job` and `resume_job` are not destructive; a stopped job keeps its progress and can be resumed. See [Which tools change state](../concepts.md#which-tools-change-state) for the MCP annotations and their meaning.
 
 ## Tools
 
@@ -19,16 +37,3 @@ The default `ReadOnly` profile exposes job inspection only. `stop_job`, `resume_
 | `stop_job` | Mutation profile: stop a specific job. It transitions to a stopped status. |
 | `resume_job` | Mutation profile: resume a specific stopped job. |
 | `delete_job` | Mutation profile: delete a specific job. It transitions to a removing status. |
-
-## Typical flow
-
-1. `list_jobs` — see what is running or has run, filtered by status when you only care about, say, failed jobs.
-2. `get_job` — inspect one job's details and the history of its status changes.
-3. `get_job_steps` — drill into the individual steps to see where a job is or where it stopped.
-4. `stop_job` / `resume_job` / `delete_job` — control the job once you understand its state.
-
-## A note on control operations
-
-`stop_job`, `resume_job`, and `delete_job` change a running system. Have the agent confirm the job id and its current state — with `get_job` — before invoking them, the same care you would take from the CLI.
-
-The server tells your MCP client that these three tools change state, so a client that asks before state-changing calls asks for them. All three are safe to repeat. `stop_job` and `resume_job` are not destructive — a stopped job keeps its progress and can be resumed. `delete_job` is destructive and irreversible: once a job is removed, it cannot be recovered. MCP clients should ask the user to confirm the specific job and scope before calling it; the server does not prompt. See [Which tools change state](../concepts.md#which-tools-change-state).
