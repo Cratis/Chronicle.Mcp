@@ -135,6 +135,7 @@ store's real schema. See the [Documentation](./Documentation/index.md) folder fo
 | `list_projections` | List projection definitions. |
 | `list_read_models` | List read model definitions. |
 | `get_read_model_instances` | List the current instances of a read model (paged). |
+| `get_patterns` | Get learned behavior patterns matching a grouping key and current facet values, in the server's ranking order. |
 | `get_events` | Read events from an event sequence, with optional filtering. |
 | `get_tail_sequence_number` | Get the highest used sequence number (tail) in an event sequence. |
 | `list_recommendations` | List active maintenance recommendations. |
