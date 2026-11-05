@@ -5,13 +5,13 @@ description: describe_system deduces a Chronicle system's entities, lifecycles, 
 
 # Describe the system
 
-You inherit an event store — or return to one after six months — and the first question is always the same: *what is this system, and what is it for?* The answer is already in the store. Event names are past-tense facts about subjects, so the names themselves carry which entities exist and what can happen to them. `describe_system` reads that language back out.
+You inherit an event store — or return to one after six months — and the first question is always the same: *what is this system, and what is it for?* Registered event names provide a starting model of the domain. `describe_system` infers entities and lifecycle stages from those names, alongside the registered schema and consumer metadata. Treat the result as a model to check with domain experts, not as validation of business intent.
 
 Ask *"describe the system in Sales"* and the tool deduces a structural model from the registered metadata: it clusters event types into the entities they describe, places every event in its entity's lifecycle, and maps the read models and automations around them. The assistant then turns that model into prose — what the system is, and the story of how it behaves.
 
 ## How the deduction works
 
-Everything is deduced from what the store actually contains — nothing is guessed from code or documentation:
+The tool combines registered metadata with name-based inference. Event names determine the inferred entities and lifecycle stages; schemas and consumer definitions supply the field and consumer details. Those inputs do not establish why a business process exists or whether a lifecycle is complete:
 
 - **Entities** come from event type names. `AuthorRegistered`, `AuthorNameChanged`, and `AuthorRemoved` all name the same subject, so they cluster as the entity **Author**. Property-scoped clusters fold into their parent: with both `CustomerRegistered` and `CustomerAddressUpdated` present, "CustomerAddress" folds into **Customer** so the whole lifecycle sits together.
 - **Lifecycle stages** come from the verb: *Registered/Created/Hired* mark **Creation**, *Changed/Renamed/Assigned* mark **Mutation**, *Received/Shipped/LoggedIn* mark **Activity**, *Corrected/Redacted* mark **Correction**, and *Removed/Closed/Cancelled* mark **Termination**.

@@ -12,7 +12,9 @@ Configuration is optional. The server works out of the box with defaults suited 
 - **Event store / namespace:** `default` / `Default`
 - **Deployment profile:** `ReadOnly` — job-control tools are not registered.
 
-You only set values when you need to point at a different server or authenticate against a secured one.
+Before connecting, confirm the server, event store and namespace you intend to use; local-development defaults do not confirm your intended target.
+
+Keep credentials in environment variables or a secret store, never in `server.json` or a committed `appsettings.json`. Chronicle authentication does not authorize MCP mutations.
 
 ## Resolution order
 
@@ -23,7 +25,7 @@ For every value the server has not been given explicitly, it resolves in this or
 3. The active context in the Cratis CLI configuration at `~/.cratis/config.json`.
 4. Built-in development defaults.
 
-Because step 3 reads the same file the [Cratis CLI](https://github.com/Cratis/cli) writes, a store you have already set up with `cratis context create` is picked up automatically — no separate configuration.
+Step 3 reads the [Cratis CLI](https://github.com/Cratis/cli) configuration in the MCP process's user home. Reusing a context created with `cratis context create` requires access to that configuration; the Docker example does not mount the host's `~/.cratis/config.json` or token cache. Supply explicit process configuration when those files are unavailable.
 
 ## Options
 
@@ -44,17 +46,15 @@ All options live under the `Cratis:Chronicle:Mcp` configuration section. As envi
 | `EventStore` | `Cratis__Chronicle__Mcp__EventStore` | The default event store used by tools when none is specified. Defaults to `default`. |
 | `Namespace` | `Cratis__Chronicle__Mcp__Namespace` | The default namespace used by tools when none is specified. Defaults to `Default`. |
 
-Every tool defaults the event store and namespace to these configured values, so you can ask high-level questions and only name a store or namespace when you need a specific one.
+Check which scope arguments each tool accepts and what values the agent supplies. Do not assume a high-level question selected the intended store or namespace.
 
 See [Deployment profiles](deployment-profiles.md) for the complete grant format, wildcard rules, revocation, and denial codes. Profile and authorization settings do not fall back to CLI contexts or development credentials.
 
 ## Authentication
 
-Keep credentials in environment variables or a secret store, never in `server.json` or a committed `appsettings.json`. Chronicle authentication does not authorize MCP mutations.
+CLI configuration and cached credentials can be reused only when those files are accessible to the MCP process. A container has its own filesystem; the Docker example does not mount the host's CLI files:
 
-The server authenticates the same way the CLI does, and shares its token cache:
-
-- **Client credentials (OAuth):** when the connection string carries a client id and secret (or you set `ClientId`/`ClientSecret`), the server obtains an OAuth token from the server's token endpoint, derived from the connection's own address. Tokens are cached on disk under `~/.cratis/tokens`, the same location the CLI uses, so the two share credentials.
+- **Client credentials (OAuth):** when the connection string carries a client id and secret (or you set `ClientId`/`ClientSecret`), the server obtains an OAuth token from the server's token endpoint, derived from the connection's own address. Tokens are cached on disk under `~/.cratis/tokens` in the MCP process's user home. Reuse with the CLI requires access to compatible cache files for the same context and credentials.
 - **API key:** set `ApiKey` (or embed `apiKey=` in the connection string) to authenticate with a static key instead.
 
 > The token endpoint is taken from the connected server's address; there is no separate management-port setting. If you are upgrading from an older release that had a `ManagementPort` option, you can remove it — it no longer has any effect.

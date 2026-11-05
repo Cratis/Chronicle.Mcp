@@ -5,14 +5,14 @@ description: Chronicle.Mcp connects an AI agent to a running Chronicle event sto
 
 # Chronicle MCP Server
 
-The Chronicle MCP server connects an AI agent to a running [Cratis Chronicle](https://github.com/Cratis/Chronicle) event store over the [Model Context Protocol](https://modelcontextprotocol.io). Point your agent at a Chronicle server and it can explore the domain, operate observers and jobs, and turn plain-language requests into Chronicle artifacts — always grounded in the store's real schema.
+The Chronicle MCP server connects an AI agent to a running [Cratis Chronicle](https://github.com/Cratis/Chronicle) event store over the [Model Context Protocol](https://modelcontextprotocol.io). Use it to inspect the configured store or request a proposal based on registered schema; the agent interprets those results.
 
 The server offers two complementary sets of capabilities:
 
 | Mode | What it does | Start here |
 | ---- | ------------ | ---------- |
 | **Operate-side** | Inspect and operate a live system — browse events, watch observers, replay partitions, manage jobs. | [Operating a store](operate-side/index.md) |
-| **Design-time** | Turn natural language into Chronicle artifacts — read models, projections, audits, catalogs — grounded in the actual event schema, never guessed. | [Design-time capabilities](design-time/index.md) |
+| **Design-time** | Turn natural language into Chronicle artifacts — read models, projections, audits, catalogs — using registered event schemas as input. | [Design-time capabilities](design-time/index.md) |
 
 ## Get started
 
@@ -26,4 +26,4 @@ By the end of [Getting started](getting-started.md) you will have the server wir
 
 Chronicle already exposes a rich gRPC management API, and the [Cratis CLI](https://github.com/Cratis/cli) puts it at your fingertips. This server puts the same store in reach of an AI agent — so instead of you translating a question into a sequence of API calls, the agent does it, and instead of hand-writing read-model boilerplate, the agent proposes a grounded starting point you review like any other change.
 
-The design-time capabilities never invent field names or event shapes. Every suggestion is introspected from what the store actually has registered — see [How it works](concepts.md#grounding-over-fluency).
+Registered schema grounds field and event information, not business intent. Review the agent's interpretation and any generated proposal — see [How it works](concepts.md#grounding-over-fluency).

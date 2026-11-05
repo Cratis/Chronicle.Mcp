@@ -13,9 +13,13 @@ By the end of this page you will have the Chronicle MCP server running inside yo
 - An MCP-capable agent (for example VS Code with an agent extension, or any client that speaks the Model Context Protocol over stdio).
 - Docker, to run the pre-built `cratis/chronicle-mcp` image.
 
+Before connecting, choose the Chronicle server you intend to inspect and use credentials limited to the access needed. Keep credentials out of committed agent configuration. Reading and sharing returned data still require permission.
+
 ## Wire it into your agent
 
-The server speaks MCP over stdio and ships as a container. Configure your agent to launch it. In VS Code, add it to your user settings or to a `.vscode/mcp.json` in your project:
+The server speaks MCP over stdio and ships as a container. This example passes a connection string but does not share host CLI configuration or token files. Configure your agent to launch it. In VS Code, add it to your user settings or to a `.vscode/mcp.json` in your project:
+
+This configuration starts in the safe `ReadOnly` profile. You can inspect jobs, but `stop_job`, `resume_job`, and `delete_job` are not listed or callable. To enable authorized job control, configure a [Mutation deployment profile](deployment-profiles.md).
 
 ```json
 {
@@ -37,21 +41,24 @@ The server speaks MCP over stdio and ships as a container. Configure your agent 
 
 On macOS and Windows the host machine is reachable from the container at `host.docker.internal`. The connection string is the only value most setups need to change — everything else has a working local-development default. See [Configuration](configuration.md) for the full resolution order and authentication.
 
-This configuration starts in the safe `ReadOnly` profile. You can inspect jobs, but `stop_job`, `resume_job`, and `delete_job` are not listed or callable. To enable authorized job control, configure a [Mutation deployment profile](deployment-profiles.md).
-
 ## Ask your first questions
 
-Once the server is connected, your agent can reach the store. Start with the operate-side capabilities to confirm connectivity:
+Start by discovering which stores are available:
 
 - "List all event stores."
+
+Choose a store from that response, ask for its namespaces, and select the intended namespace from that result. Use the chosen store explicitly for discovery; include the namespace on tools that accept it. Then inspect that scope:
+
 - "What event types are registered?"
 - "Are there any failed partitions?"
 
-Then try the design-time capabilities, which turn a plain request into a grounded artifact:
+Before continuing, check the scope actually supplied and that the inspection completed, not merely that the agent connected. Resolve connection or permission errors, and investigate an unexpected empty result, before interpreting the data.
 
-- "Describe the system in this event store" → the agent deduces entities and lifecycles with [describe the system](design-time/describe-system.md) and tells the system's story.
+Once the scope is confirmed, choose one of these optional questions for your task; they are alternatives, not a sequence:
+
+- "Describe the system in this event store" → the agent infers an entity/lifecycle model with [describe the system](design-time/describe-system.md) for you to check against the domain.
 - "Show all employees with all details" → an [ad-hoc projection](design-time/ad-hoc-projection.md) folds the events into current state on demand.
-- "What event types should I introduce next?" → grounded gap findings from [suggest the next event types](design-time/suggest-next-event-types.md).
+- "What event types should I introduce next?" → candidate gaps for domain review from [suggest the next event types](design-time/suggest-next-event-types.md).
 - "Show me all the users registered" → the agent resolves the event types, then proposes a read model with [read-model scaffolding](design-time/read-model-scaffolding.md).
 - "What events are we writing that nothing reads?" → an [unconsumed-event audit](design-time/unconsumed-event-audit.md).
 - "Why does this order show as cancelled?" → a [causal trace](design-time/causal-trace.md) of the order's history.

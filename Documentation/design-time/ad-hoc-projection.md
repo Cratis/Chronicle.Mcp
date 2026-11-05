@@ -7,7 +7,13 @@ description: run_ad_hoc_projection folds Chronicle events into current state on 
 
 *"Show all employees with all details."* In an event-sourced system, answering that means folding events into current state — and if no projection happens to exist for exactly that question, the answer traditionally requires writing one, deploying it, and waiting for it to catch up. `run_ad_hoc_projection` removes that loop: it materializes the answer on demand, straight from the store, without registering or persisting anything.
 
-Given the event types involved, the tool reads the matching events from the event sequence and folds them into per-event-source instances with the same semantics as an AutoMap projection: properties merge by name, later events overwrite earlier values, and removal events drop the instance. The result is the current state of every instance — computed in the moment, discarded after.
+Given the event types involved, the tool reads their matching events from the event sequence and folds them into per-event-source instances. It merges top-level properties by name, lets later events overwrite earlier values, and drops an instance for a removal event. The answer reflects the event types you selected; it is not proof that the selection covers every fact the question needs.
+
+## Honest limits
+
+- The folding is AutoMap-shaped: top-level properties merge by name, last write wins. Joins, children collections, and computed values are projection-engine territory — reach for a real projection when you need them.
+- Every matching event is read from the sequence on each call. Use it for exploration and spot checks, not as a serving layer for production queries.
+- `limit` caps returned instances after the fold; it does not cap fetched events or query cost. Choose the intended event store, namespace, sequence, event types, and, when appropriate, a single `eventSourceId` before running. Confirm that reading those events is authorized and that the output can be shared.
 
 ## The natural-language flow
 
@@ -41,11 +47,6 @@ The `query_system` prompt packages exactly this flow: give it the natural-langua
 ## From ad-hoc to permanent
 
 An ad-hoc projection is a probe. When the same question keeps coming back, that is the signal it deserves a real read model — hand the same event types to [read-model scaffolding](read-model-scaffolding.md) and turn the probe into a reviewable projection in your codebase.
-
-## Honest limits
-
-- The folding is AutoMap-shaped: top-level properties merge by name, last write wins. Joins, children collections, and computed values are projection-engine territory — reach for a real projection when you need them.
-- Every matching event is read from the sequence on each call. That is exactly right for design-time exploration and operational spot checks; it is not a serving layer for production queries.
 
 ## Related
 

@@ -5,9 +5,13 @@ description: suggest_next_event_types finds gaps in a Chronicle event model, suc
 
 # Suggest the next event types
 
-A growing event model develops blind spots: an entity that can be created but never removed, a value set once at registration that the business later needs to change, a lifecycle whose beginning is implicit. You usually discover these gaps the hard way — when a feature needs an event that does not exist. `suggest_next_event_types` finds them first.
+Use `suggest_next_event_types` to find candidates for a modeling discussion — not a list of events the business must implement. It checks the entities and lifecycles inferred from registered event names, with candidate properties drawn from the registered schema.
 
-Ask *"what event types should I introduce next for the system in Sales?"* and the tool deduces the system's entities and lifecycles from the registered event types (the same deduction as [describe the system](describe-system.md)), then runs deterministic gap analysis over them. Every suggestion names the concrete gap it closes — these are grounded findings, not brainstorming.
+Ask *"what event types should I introduce next for the system in Sales?"* and the tool deduces the system's entities and lifecycles from the registered event types (the same deduction as [describe the system](describe-system.md)), then runs deterministic gap analysis over them. Each suggestion names a gap in that inferred model; decide whether your domain needs it.
+
+## The suggestions are seeds
+
+The analysis is deliberately mechanical so it never invents facts — which means the names need the domain's own language. The guidance tells the assistant to refine them: a Book is *Withdrawn*, not *Removed*; an Order is *Cancelled*, not *Deleted*; and some facts really are immutable, in which case the right answer is to discard the suggestion and say why.
 
 ## The gaps it finds
 
@@ -27,10 +31,6 @@ Ask *"what event types should I introduce next for the system in Sales?"* and th
 - **Suggestions** — each with a suggested name (past tense, one purpose), the entity and lifecycle stage it completes, the rationale naming the gap, and candidate properties drawn from the existing schema.
 - **The entities analyzed** — so the assistant can reason about the suggestions in context.
 - **Guidance** — instructions for refining the seeds with domain knowledge.
-
-## The suggestions are seeds
-
-The analysis is deliberately mechanical so it never invents facts — which means the names need the domain's own language. The guidance tells the assistant to refine them: a Book is *Withdrawn*, not *Removed*; an Order is *Cancelled*, not *Deleted*; and some facts really are immutable, in which case the right answer is to discard the suggestion and say why.
 
 ## Example
 
