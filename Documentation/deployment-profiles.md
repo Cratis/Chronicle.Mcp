@@ -1,6 +1,6 @@
 ---
 title: Deployment profiles
-description: Choose read-only access or authorize specific Chronicle job mutations with a bounded deployment policy.
+description: Choose read-only access or authorize specific Chronicle job mutations through a bounded deployment policy for the MCP server your agent connects to.
 ---
 
 Use the default `ReadOnly` profile when your agent only needs to explore a store, diagnose observers, or generate design-time artifacts. Enable `Mutation` only when this deployment should control specific jobs.
