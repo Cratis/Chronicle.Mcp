@@ -43,7 +43,6 @@ jobs:
         with:
           dotnet-version: |
             ${{ env.DOTNET_VERSION }}
-          dotnet-quality: preview
 
       - name: Build
         run: dotnet build --configuration Release
