@@ -11,6 +11,27 @@ namespace Cratis.Chronicle.Mcp.Tools.Design;
 /// </summary>
 public static class EventSchemaParser
 {
+    const string DefaultType = "object";
+
+    static readonly Dictionary<string, string> _formatClrTypes = new(StringComparer.Ordinal)
+    {
+        ["guid"] = "Guid",
+        ["uuid"] = "Guid",
+        ["date-time"] = "DateTimeOffset",
+        ["date"] = "DateOnly",
+        ["time"] = "TimeOnly",
+        ["int32"] = "int",
+        ["int64"] = "long"
+    };
+
+    static readonly Dictionary<string, string> _jsonTypeClrTypes = new(StringComparer.Ordinal)
+    {
+        ["string"] = "string",
+        ["integer"] = "int",
+        ["number"] = "double",
+        ["boolean"] = "bool"
+    };
+
     /// <summary>
     /// Parses the top-level properties of an event type's JSON schema.
     /// </summary>
@@ -71,39 +92,41 @@ public static class EventSchemaParser
 
     static string ReadType(JsonElement definition)
     {
-        if (definition.TryGetProperty("type", out var type))
+        if (!definition.TryGetProperty("type", out var type))
         {
-            return type.ValueKind switch
-            {
-                JsonValueKind.String => type.GetString() ?? "object",
-                JsonValueKind.Array => type.EnumerateArray()
-                    .Where(entry => entry.ValueKind == JsonValueKind.String)
-                    .Select(entry => entry.GetString())
-                    .FirstOrDefault(entry => !string.Equals(entry, "null", StringComparison.Ordinal)) ?? "object",
-                _ => "object"
-            };
+            return DefaultType;
         }
 
-        return "object";
+        return type.ValueKind switch
+        {
+            JsonValueKind.String => type.GetString() ?? DefaultType,
+            JsonValueKind.Array => FirstNonNullType(type),
+            _ => DefaultType
+        };
     }
 
-    static string ToClrType(string jsonType, string? format, JsonElement definition) =>
-        (jsonType, format) switch
+    static string FirstNonNullType(JsonElement types) =>
+        types.EnumerateArray()
+            .Where(entry => entry.ValueKind == JsonValueKind.String)
+            .Select(entry => entry.GetString())
+            .FirstOrDefault(entry => !string.Equals(entry, "null", StringComparison.Ordinal)) ?? DefaultType;
+
+    static string ToClrType(string jsonType, string? format, JsonElement definition)
+    {
+        if (format is not null && _formatClrTypes.TryGetValue(format, out var formatClrType))
         {
-            (_, "guid") => "Guid",
-            (_, "uuid") => "Guid",
-            (_, "date-time") => "DateTimeOffset",
-            (_, "date") => "DateOnly",
-            (_, "time") => "TimeOnly",
-            (_, "int32") => "int",
-            (_, "int64") => "long",
-            ("string", _) => "string",
-            ("integer", _) => "int",
-            ("number", _) => "double",
-            ("boolean", _) => "bool",
-            ("array", _) => $"IEnumerable<{ElementClrType(definition)}>",
-            _ => ReferenceTypeName(definition)
-        };
+            return formatClrType;
+        }
+
+        if (_jsonTypeClrTypes.TryGetValue(jsonType, out var jsonTypeClrType))
+        {
+            return jsonTypeClrType;
+        }
+
+        return string.Equals(jsonType, "array", StringComparison.Ordinal)
+            ? $"IEnumerable<{ElementClrType(definition)}>"
+            : ReferenceTypeName(definition);
+    }
 
     static string ElementClrType(JsonElement definition)
     {
