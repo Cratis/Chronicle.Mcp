@@ -133,22 +133,15 @@ public static class EventNameMorphology
         for (var index = 0; index < name.Length; index++)
         {
             var character = name[index];
-            if (character is '-' or '_' or '.' or ' ')
+            if (IsSeparator(character))
             {
                 Flush(words, current);
                 continue;
             }
 
-            if (char.IsUpper(character) && current.Length > 0)
+            if (current.Length > 0 && StartsNewWord(name, index))
             {
-                var previous = name[index - 1];
-                var startsNewWord = char.IsLower(previous) || char.IsDigit(previous) ||
-                    (char.IsUpper(previous) && index + 1 < name.Length && char.IsLower(name[index + 1]));
-
-                if (startsNewWord)
-                {
-                    Flush(words, current);
-                }
+                Flush(words, current);
             }
 
             current.Append(character);
@@ -198,6 +191,24 @@ public static class EventNameMorphology
         }
 
         return _verbStages.TryGetValue(words[verbIndex], out var verbStage) ? verbStage : LifecycleStage.Activity;
+    }
+
+    static bool IsSeparator(char character) => character is '-' or '_' or '.' or ' ';
+
+    static bool StartsNewWord(string name, int index)
+    {
+        if (!char.IsUpper(name[index]))
+        {
+            return false;
+        }
+
+        var previous = name[index - 1];
+        if (char.IsLower(previous) || char.IsDigit(previous))
+        {
+            return true;
+        }
+
+        return char.IsUpper(previous) && index + 1 < name.Length && char.IsLower(name[index + 1]);
     }
 
     static int FindVerbIndex(IReadOnlyList<string> words)

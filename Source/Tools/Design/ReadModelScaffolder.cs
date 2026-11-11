@@ -27,25 +27,11 @@ public static class ReadModelScaffolder
         {
             foreach (var property in EventSchemaParser.Parse(registration.Schema))
             {
-                var name = PascalCase(property.Name);
-                if (string.Equals(name, "Id", StringComparison.Ordinal))
+                var field = TryAddField(property, registration.Type.Id, seen, notes);
+                if (field is not null)
                 {
-                    continue;
+                    fields.Add(field);
                 }
-
-                if (seen.TryGetValue(name, out var existing))
-                {
-                    if (!string.Equals(existing.ClrType, property.ClrType, StringComparison.Ordinal))
-                    {
-                        notes.Add($"Property '{name}' appears as {existing.ClrType} (from {existing.SourceEventType}) and {property.ClrType} (from {registration.Type.Id}); kept the first. Review the type.");
-                    }
-
-                    continue;
-                }
-
-                var field = new ScaffoldedField(name, property.ClrType, registration.Type.Id);
-                seen[name] = field;
-                fields.Add(field);
             }
         }
 
@@ -95,6 +81,29 @@ public static class ReadModelScaffolder
         lines.Add("}");
 
         return string.Join('\n', lines) + "\n";
+    }
+
+    static ScaffoldedField? TryAddField(EventSchemaProperty property, string sourceEventType, Dictionary<string, ScaffoldedField> seen, ICollection<string> notes)
+    {
+        var name = PascalCase(property.Name);
+        if (string.Equals(name, "Id", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        if (seen.TryGetValue(name, out var existing))
+        {
+            if (!string.Equals(existing.ClrType, property.ClrType, StringComparison.Ordinal))
+            {
+                notes.Add($"Property '{name}' appears as {existing.ClrType} (from {existing.SourceEventType}) and {property.ClrType} (from {sourceEventType}); kept the first. Review the type.");
+            }
+
+            return null;
+        }
+
+        var field = new ScaffoldedField(name, property.ClrType, sourceEventType);
+        seen[name] = field;
+        return field;
     }
 
     static string PascalCase(string value)
