@@ -11,4 +11,5 @@ public class and_mutation_is_allowed : given.a_filter
     async Task Because() => _result = await Call("stop_job");
     [Fact] void should_reach_the_job_tool() => _services.Jobs.Received(1).StopJob(Arg.Is<StopJobRequest>(request => request.JobId == _arguments["jobId"].GetGuid() && request.EventStore == Store && request.Namespace == Namespace));
     [Fact] void should_not_return_an_error() => (_result.IsError ?? false).ShouldBeFalse();
+    [Fact] void should_wrap_the_mutation_result() => _result.StructuredContent!.Value.GetProperty("untrustedData").GetProperty("tool").GetString().ShouldEqual("stop_job");
 }

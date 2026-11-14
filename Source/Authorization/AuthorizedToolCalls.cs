@@ -31,32 +31,45 @@ public class AuthorizedToolCalls(ToolCatalog catalog, MutationAuthorizer authori
         var tool = request.MatchedPrimitive is McpServerTool registeredTool
             ? catalog.Find(registeredTool.ProtocolTool.Name)
             : null;
-        if (tool is { IsReadOnly: false })
+        if (tool is { IsReadOnly: false } && AuthorizeMutation(tool, request.Params?.Arguments) is { } denial)
         {
-            if (!authorizer.HasValidTarget(tool, request.Params?.Arguments)) return Deny(DenialCodes.BadRequest, tool.Name);
-
-            AuthorizationDecision decision;
-            try
-            {
-                decision = authorizer.Authorize(tool, request.Params?.Arguments, options.CurrentValue);
-            }
-            catch (InvalidMcpConfiguration)
-            {
-                decision = new(DenialCodes.PolicyInvalid);
-            }
-
-            if (!decision.IsAllowed) return Deny(decision.Code!, tool.Name);
+            return denial;
         }
 
         try
         {
-            return await next(request, cancellationToken);
+            return await InvokeAndWrap(next, request, cancellationToken);
         }
         catch (RpcException exception) when (exception.StatusCode is StatusCode.PermissionDenied or StatusCode.Unauthenticated)
         {
             return Deny(DenialCodes.ChronicleDenied, tool?.Name ?? string.Empty);
         }
     };
+
+    static async ValueTask<CallToolResult> InvokeAndWrap(McpRequestHandler<CallToolRequestParams, CallToolResult> next, RequestContext<CallToolRequestParams> request, CancellationToken cancellationToken)
+    {
+        // Let the SDK hide Chronicle exception text; tools must not throw McpException
+        // with store-controlled text, since the SDK would show that text verbatim.
+        var result = await next(request, cancellationToken);
+        return UntrustedDataEnvelope.Wrap(result, request.Params?.Name ?? string.Empty);
+    }
+
+    CallToolResult? AuthorizeMutation(CatalogTool tool, IDictionary<string, System.Text.Json.JsonElement>? arguments)
+    {
+        if (!authorizer.HasValidTarget(tool, arguments)) return Deny(DenialCodes.BadRequest, tool.Name);
+
+        AuthorizationDecision decision;
+        try
+        {
+            decision = authorizer.Authorize(tool, arguments, options.CurrentValue);
+        }
+        catch (InvalidMcpConfiguration)
+        {
+            decision = new(DenialCodes.PolicyInvalid);
+        }
+
+        return decision.IsAllowed ? null : Deny(decision.Code!, tool.Name);
+    }
 
     CallToolResult Deny(string code, string operation)
     {

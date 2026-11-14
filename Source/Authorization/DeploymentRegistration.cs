@@ -47,6 +47,7 @@ public static class DeploymentRegistration
     {
         builder.Services.AddOptions<ProtocolOptions>().Configure<IServiceProvider, IOptions<DeploymentOptions>, ToolCatalog>((protocol, services, settings, catalog) =>
         {
+            protocol.ServerInstructions = ServerInstructions.Text;
             protocol.ToolCollection = new();
             foreach (var tool in catalog.ForProfile(settings.Value.Profile))
             {
