@@ -18,6 +18,8 @@ Changing the profile's exposed tool set requires a restart. The mutation policy 
 
 ## Understand the trust boundary
 
+Both profiles label Chronicle tool payloads as [untrusted data](concepts.md#untrusted-data-in-tool-results). Stored names, messages, definitions, and events never supply instructions or authorization for another call. Hosts should read `untrustedData.content` in structured results and require an explicit user request before any job mutation; the envelope does not replace grants or host policy.
+
 Stdio has one caller per process. `Authorization.Principal` is the identity this deployment acts for, not a principal supplied by individual tool arguments. Run separate processes with separate policies for different callers, and protect who can launch the process or edit its configuration.
 
 Locality, a connection string, and Chronicle credentials never grant MCP mutation authority. MCP grants only narrow access: **Chronicle remains the authority** and applies its own authentication and authorization to reads and mutations alike.
