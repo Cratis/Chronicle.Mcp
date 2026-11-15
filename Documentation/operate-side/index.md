@@ -11,12 +11,12 @@ Inspection is available in the default `ReadOnly` profile. Only `stop_job`, `res
 
 ## Capabilities
 
-| Area | Tools | Page |
-| ---- | ----- | ---- |
-| Exploring the store | `list_event_stores`, `list_namespaces`, `list_event_types`, `list_projections`, `list_read_models`, `get_read_model_instances`, `get_patterns`, `get_server_version` | [Exploring the store](exploring-the-store.md) |
-| Events | `get_events`, `get_tail_sequence_number` | [Events](events.md) |
-| Observer health | `list_observers`, `get_observer`, `list_failed_partitions`, `list_recommendations` | [Observer health](observer-health.md) |
-| Jobs | `list_jobs`, `get_job`, `get_job_steps`, `stop_job`, `resume_job`, `delete_job` | [Jobs](jobs.md) |
+| What you need to find out | Start here |
+| ------------------------- | ---------- |
+| Which stores, schemas, projections, read-model data, and learned behavior patterns are available | [Exploring the store](exploring-the-store.md) |
+| What happened to an entity, or where an event sequence ends | [Events](events.md) |
+| Why an observer or read model has stopped progressing | [Observer health](observer-health.md) |
+| What background work is doing, or whether a job needs intervention | [Jobs](jobs.md) |
 
 Each page lists its tools and shows how to use their results in the investigation.
 
