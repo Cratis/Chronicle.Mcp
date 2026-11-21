@@ -1,6 +1,6 @@
 ---
 title: Exploring the store
-description: Use Chronicle.Mcp tools to list a store's event stores, namespaces, event types, projections and read models, and read their current instances.
+description: Use Chronicle.Mcp tools to list a store's event stores, namespaces, event types, projections and read models, read their current instances, and step a projection through an instance's history.
 ---
 
 # Exploring the store
@@ -20,6 +20,7 @@ Before exploring, check your [connection configuration](../configuration.md). To
 | `list_projections` | List projection definitions, including the read model each projects into and its activity state. |
 | `list_read_models` | List read model definitions, including whether each model is queryable. |
 | `get_read_model_instances` | Read a page of current instances from a read model. |
+| `step_projection` | Step a registered projection through one instance's history, showing the instance after each event. |
 | `get_patterns` | Get learned behavior patterns matching a grouping key and context, in server order. |
 
 ## Typical flow
@@ -30,6 +31,27 @@ Before exploring, check your [connection configuration](../configuration.md). To
 4. Choose a queryable read model and pass its container name to `get_read_model_instances`. This returns a page of persisted data, not a projection definition. Ask for further pages when you need more than the first page of results.
 
 If you already know the read model and are investigating stale data, go straight to [Observer health](observer-health.md). The observer's running state and failures are more useful than another schema inventory for that question.
+
+## Stepping a projection through an instance's history
+
+`step_projection` is read-only. It shows how a registered projection built one read model instance: after each event, you see the event and the instance as it then stood. Pass the read model's container name or identifier, as listed by `list_read_models`, and the instance key (usually the event source id). Optional `eventStore` and `namespace` fall back to the configured defaults, and `eventSequenceId` defaults to `event-log`.
+
+The Chronicle server replays the real projection, one event at a time, and the tool runs no projection logic of its own. Nothing is written: no read model, sink or projection state changes. Event content and instances are released by the server under its compliance policy, and are returned as untrusted store data.
+
+The server reads the instance's whole history before it answers. The event limit bounds what the tool returns, not the work the server does, so use the tool for histories you know to be small. `maxEvents` defaults to 100 and is capped at 500. The tool also refuses results whose instances and event content exceed 256 KiB. A history over either limit returns no steps: it is refused rather than truncated, and there is no continuation. Server-side bounds for larger histories are tracked in [Cratis/Chronicle#4323](https://github.com/Cratis/Chronicle/issues/4323).
+
+Each step has `changedProperties`, `unchanged` and `removed`. They come from comparing an instance with the one before it, so they do not prove that a particular projection mapping handled the event. `removed` means the previous instance had state and this one is empty.
+
+The result's `status` tells you what happened:
+
+| Status | Meaning |
+| ------ | ------- |
+| `ok` | The steps are in `steps`, in the order the server returned them. |
+| `invalid-request` | The read model or key is blank, or `maxEvents` is not positive. |
+| `unknown-read-model` | No read model with that name or identifier is registered in the event store. |
+| `unsupported-read-model` | The read model is populated by a reducer or owned by the client; only server-owned projections can be stepped. |
+| `no-history` | The projection has no events for the key, or the key does not exist. |
+| `refused-over-budget` | The history exceeds the event or size limit; `totalEvents` reports its size. |
 
 ## Querying learned behavior patterns
 
