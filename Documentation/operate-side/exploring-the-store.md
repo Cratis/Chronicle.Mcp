@@ -1,6 +1,6 @@
 ---
 title: Exploring the store
-description: Use Chronicle.Mcp tools to list a store's event stores, namespaces, event types, projections and read models, read their current instances, and step a projection through an instance's history.
+description: Use Chronicle MCP tools to list event stores, namespaces, event types, projections and read models, read instances, and step a projection through history.
 ---
 
 # Exploring the store
