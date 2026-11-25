@@ -7,10 +7,8 @@ namespace Cratis.Chronicle.Mcp.Configuration;
 /// Represents options for configuring the Chronicle MCP server.
 /// </summary>
 /// <remarks>
-/// These options let the MCP server be configured independently of the Cratis CLI. When a value
-/// here is left unset, the corresponding value is resolved from the CLI configuration at
-/// <c language="csharp">~/.cratis/config.json</c> (when <see cref="UseCliConfiguration"/> is enabled), then from
-/// environment variables, and finally from built-in development defaults.
+/// Explicit options take precedence over the connection environment variable and an explicitly
+/// selected CLI configuration. Development credentials require <see cref="UseDevelopmentCredentials"/>.
 /// </remarks>
 public class McpServerOptions
 {
@@ -29,8 +27,8 @@ public class McpServerOptions
     /// </summary>
     /// <remarks>
     /// When not set, the connection string is resolved from the <c language="csharp">CHRONICLE_CONNECTION_STRING</c>
-    /// environment variable, then from the active CLI context, and finally defaults to a local
-    /// development server.
+    /// environment variable, then from the selected CLI context. A local server default requires
+    /// <see cref="UseDevelopmentCredentials"/>.
     /// </remarks>
     public string? ConnectionString { get; set; }
 
@@ -43,10 +41,21 @@ public class McpServerOptions
     public string? Context { get; set; }
 
     /// <summary>
-    /// Gets or sets a value indicating whether to fall back to the Cratis CLI configuration
-    /// at <c language="csharp">~/.cratis/config.json</c> for any value not explicitly configured here.
+    /// Gets or sets a value indicating whether to read the explicitly selected CLI configuration.
+    /// Defaults to false.
     /// </summary>
-    public bool UseCliConfiguration { get; set; } = true;
+    public bool UseCliConfiguration { get; set; }
+
+    /// <summary>
+    /// Gets or sets the absolute CLI configuration file path. Required when CLI configuration is enabled.
+    /// </summary>
+    public string? CliConfigurationPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to use built-in local development credentials and server defaults.
+    /// Defaults to false.
+    /// </summary>
+    public bool UseDevelopmentCredentials { get; set; }
 
     /// <summary>
     /// Gets or sets the client id used for client credentials authentication.

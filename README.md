@@ -41,6 +41,7 @@ For the global user settings, you simply do the following:
                 "-i",
                 "--rm",
                 "-eCratis__Chronicle__Mcp__ConnectionString=chronicle://host.docker.internal:35000",
+                "-eCratis__Chronicle__Mcp__UseDevelopmentCredentials=true",
                 "cratis/chronicle-mcp"
             ]
         }
@@ -64,6 +65,7 @@ For a local `mcp.json` file, its almost the same:
                 "-i",
                 "--rm",
                 "-eCratis__Chronicle__Mcp__ConnectionString=chronicle://host.docker.internal:35000",
+                "-eCratis__Chronicle__Mcp__UseDevelopmentCredentials=true",
                 "cratis/chronicle-mcp"
             ]
         }
@@ -77,22 +79,21 @@ You can see this in action in the [mcp.json](./.vscode/mcp.json) in this reposit
 
 ## Configuration
 
-**Configuration is optional.** The MCP server works out of the box with sensible defaults suitable for local development:
+Configure the destination and credentials explicitly. The `ReadOnly` profile remains the default; credentials do not enable mutations.
+For local development only, set `Cratis__Chronicle__Mcp__UseDevelopmentCredentials=true` to opt into the built-in development credentials and localhost connection default. The Docker examples above opt in explicitly.
 
-- **Connection String:** `chronicle://host.docker.internal:35000`
-- **Credentials:** Development client ID (`chronicle-dev-client`) and secret (`chronicle-dev-secret`)
-- **Profile:** `ReadOnly` — mutating tools are not listed or callable.
+Configuration comes from environment variables, or a JSON file selected by `--config /absolute/path/settings.json` or `CHRONICLE_MCP_CONFIG`. The argument takes precedence over the path environment variable; option environment variables override the selected file. No `appsettings.json`, environment-specific file, or user secrets are discovered from the working directory.
 
-If you need to customize any settings, the MCP server can be configured entirely on its own and is also compatible with the
-[Cratis CLI](https://github.com/Cratis/cli). For any value you do not set explicitly, the server resolves it in this order:
+Connection resolution is:
 
-1. Explicit MCP options (environment variables / `appsettings.json`).
+1. Explicit MCP options.
 2. The `CHRONICLE_CONNECTION_STRING` environment variable.
-3. The active context in the CLI configuration at `~/.cratis/config.json`.
-4. Built-in development defaults.
+3. A CLI context, only with `UseCliConfiguration=true` and an absolute `CliConfigurationPath`.
+4. Local development defaults, only with `UseDevelopmentCredentials=true`; otherwise startup refuses missing connection or credentials.
 
-When client credentials are used, the server obtains and caches OAuth tokens in `~/.cratis/tokens`,
-the same location used by the CLI, so tokens are shared between the two.
+CLI login tokens require a matching recorded `tokenServer` (host and port). Unbound or mismatched tokens are not sent. OAuth tokens use a separate MCP-owned, destination-bound cache under `~/.cratis/mcp/tokens`; the CLI's shared unscoped cache is never read. Authenticated connections require a single destination, not a multi-host failover list.
+
+**Upgrading:** replace implicit working-directory configuration with an explicit absolute path or environment variables. Supply credentials or opt into development credentials. To reuse a CLI context, enable it and select its configuration file explicitly; log in again if the login lacks `tokenServer`.
 
 All options live under the `Cratis:Chronicle:Mcp` configuration section. As environment variables
 they use the `Cratis__Chronicle__Mcp__` prefix:
@@ -101,10 +102,12 @@ they use the `Cratis__Chronicle__Mcp__` prefix:
 | ------ | -------------------- | ----------- |
 | `Profile` | `Cratis__Chronicle__Mcp__Profile` | `ReadOnly` (default) or `Mutation`; unknown values prevent startup. |
 | `Authorization` | `Cratis__Chronicle__Mcp__Authorization__...` | Mutation policy: principal, expiration, revoked principals, and scoped grants. See [Deployment profiles](./Documentation/deployment-profiles.md). |
-| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Defaults to `chronicle://localhost:35000`. |
+| `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Required unless supplied by a selected CLI context or development opt-in. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from (defaults to the active context). |
-| `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Set to `false` to ignore `~/.cratis/config.json` entirely. |
-| `ClientId` / `ClientSecret` | `Cratis__Chronicle__Mcp__ClientId` / `...__ClientSecret` | Client credentials for authentication. Defaults to development credentials if not specified. |
+| `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Defaults to `false`; set to `true` to read the explicitly selected CLI configuration. |
+| `CliConfigurationPath` | `Cratis__Chronicle__Mcp__CliConfigurationPath` | Absolute CLI configuration path, required when CLI configuration is enabled. |
+| `UseDevelopmentCredentials` | `Cratis__Chronicle__Mcp__UseDevelopmentCredentials` | Defaults to `false`; explicitly enables built-in development credentials and the localhost connection default. |
+| `ClientId` / `ClientSecret` | `Cratis__Chronicle__Mcp__ClientId` / `...__ClientSecret` | Explicit client credentials for authentication. No implicit development credentials. |
 | `ApiKey` | `Cratis__Chronicle__Mcp__ApiKey` | An API key to authenticate with, as an alternative to client credentials. |
 | `EventStore` | `Cratis__Chronicle__Mcp__EventStore` | The default event store used by tools when none is specified. Defaults to `default`. |
 | `Namespace` | `Cratis__Chronicle__Mcp__Namespace` | The default namespace used by tools when none is specified. Defaults to `Default`. |

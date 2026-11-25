@@ -7,15 +7,8 @@ using Microsoft.Extensions.Options;
 namespace Cratis.Chronicle.Mcp.Configuration;
 
 /// <summary>
-/// Resolves the effective Chronicle connection settings for the MCP server.
+/// Resolves explicitly configured Chronicle settings without discovering files in the working directory.
 /// </summary>
-/// <remarks>
-/// Resolution precedence for every value is: explicit <see cref="McpServerOptions"/> first, then the
-/// matching environment variable, then the active CLI context from <c language="csharp">~/.cratis/config.json</c>
-/// (when <see cref="McpServerOptions.UseCliConfiguration"/> is enabled), and finally a built-in
-/// development default. This keeps the MCP server compatible with the Cratis CLI while still allowing
-/// it to be configured entirely on its own.
-/// </remarks>
 /// <param name="options">The MCP server options.</param>
 public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options)
 {
@@ -34,138 +27,128 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
     /// </summary>
     public const string ConnectionStringEnvVar = "CHRONICLE_CONNECTION_STRING";
 
-    const string DefaultConnectionString = "chronicle://localhost:35000";
-    const string Scheme = "chronicle://";
-
     readonly McpServerOptions _options = options.Value;
+    readonly ChronicleCliConfiguration _configuration = LoadCliConfiguration(options.Value);
 
     /// <summary>
-    /// Gets the name of the CLI context that connection details are resolved from.
+    /// Gets the selected CLI context name.
     /// </summary>
-    public string ContextName => _options.Context ?? Configuration.ActiveContextName;
+    public string ContextName => _options.Context ?? _configuration.ActiveContextName;
 
-    bool UseCli => _options.UseCliConfiguration;
-
-    ChronicleCliConfiguration Configuration { get; } = options.Value.UseCliConfiguration ? ChronicleCliConfiguration.Load() : new ChronicleCliConfiguration();
-
-    ChronicleCliContext Context => UseCli ? Configuration.GetContext(_options.Context) : new ChronicleCliContext();
+    ChronicleCliContext Context => _configuration.GetContext(_options.Context);
 
     /// <summary>
-    /// Resolves the effective connection string, composing in credentials when none are embedded.
+    /// Resolves the connection string and credentials, refusing implicit authentication defaults.
     /// </summary>
     /// <returns>The resolved connection string.</returns>
     public string ResolveConnectionString()
     {
-        string connectionString;
+        var connectionString = FirstNonEmpty(
+            _options.ConnectionString,
+            Environment.GetEnvironmentVariable(ConnectionStringEnvVar),
+            Context.Server);
+        connectionString ??= _options.UseDevelopmentCredentials
+            ? "chronicle://localhost:35000"
+            : throw new InvalidOperationException("Configure a Chronicle ConnectionString explicitly, or enable UseDevelopmentCredentials for local development.");
 
-        if (!string.IsNullOrWhiteSpace(_options.ConnectionString))
-        {
-            connectionString = _options.ConnectionString;
-        }
-        else
-        {
-            var envVar = Environment.GetEnvironmentVariable(ConnectionStringEnvVar);
-            if (!string.IsNullOrWhiteSpace(envVar))
-            {
-                connectionString = envVar;
-            }
-            else
-            {
-                connectionString = !string.IsNullOrWhiteSpace(Context.Server)
-                    ? Context.Server
-                    : DefaultConnectionString;
-            }
-        }
-
-        return ComposeCredentials(connectionString);
+        return ComposeCredentials(new ChronicleConnectionString(connectionString));
     }
 
     /// <summary>
-    /// Resolves the default event store to use when a tool is not given one explicitly.
+    /// Resolves the default event store.
     /// </summary>
-    /// <returns>The resolved event store name.</returns>
+    /// <returns>The selected event store.</returns>
     public string ResolveEventStore() =>
         FirstNonEmpty(_options.EventStore, Context.EventStore) ?? DefaultEventStoreName;
 
     /// <summary>
-    /// Resolves the default namespace to use when a tool is not given one explicitly.
+    /// Resolves the default namespace.
     /// </summary>
-    /// <returns>The resolved namespace name.</returns>
+    /// <returns>The selected namespace.</returns>
     public string ResolveNamespace() =>
         FirstNonEmpty(_options.Namespace, Context.Namespace) ?? DefaultNamespaceName;
 
-    static bool HasEmbeddedAuth(string connectionString)
+    static ChronicleCliConfiguration LoadCliConfiguration(McpServerOptions options)
     {
-        if (!connectionString.StartsWith(Scheme, StringComparison.OrdinalIgnoreCase))
+        if (!options.UseCliConfiguration)
         {
-            return false;
+            return new ChronicleCliConfiguration();
         }
 
-        var afterScheme = connectionString[Scheme.Length..];
-        var queryStart = afterScheme.IndexOf('?', StringComparison.Ordinal);
-        var hostPart = queryStart >= 0 ? afterScheme[..queryStart] : afterScheme;
+        if (string.IsNullOrWhiteSpace(options.CliConfigurationPath))
+        {
+            throw new InvalidOperationException("UseCliConfiguration requires an absolute CliConfigurationPath.");
+        }
 
-        return hostPart.Contains('@', StringComparison.Ordinal) ||
-               connectionString.Contains("apiKey=", StringComparison.OrdinalIgnoreCase);
+        return ChronicleCliConfiguration.Load(options.CliConfigurationPath);
     }
 
     static bool IsTokenValid(string? tokenExpiry) =>
-        !string.IsNullOrWhiteSpace(tokenExpiry) &&
-        DateTimeOffset.TryParse(tokenExpiry, out var expiry) &&
-        expiry > DateTimeOffset.UtcNow.AddMinutes(1);
+        DateTimeOffset.TryParse(tokenExpiry, out var expiry) && expiry > DateTimeOffset.UtcNow.AddMinutes(1);
 
-    static string AppendApiKey(string connectionString, string apiKey)
-    {
-        var separator = connectionString.Contains('?', StringComparison.Ordinal) ? "&" : "?";
-        return $"{connectionString}{separator}apiKey={Uri.EscapeDataString(apiKey)}";
-    }
-
-    static string InsertCredentials(string connectionString, string clientId, string clientSecret)
-    {
-        if (!connectionString.StartsWith(Scheme, StringComparison.OrdinalIgnoreCase))
-        {
-            return connectionString;
-        }
-
-        var encodedId = Uri.EscapeDataString(clientId);
-        var encodedSecret = Uri.EscapeDataString(clientSecret);
-        return $"{Scheme}{encodedId}:{encodedSecret}@{connectionString[Scheme.Length..]}";
-    }
+    static bool HasCredentials(string? clientId, string? clientSecret) =>
+        !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret);
 
     static string? FirstNonEmpty(params string?[] values) =>
-        values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+        values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
 
-    string ComposeCredentials(string connectionString)
+    string ComposeCredentials(ChronicleConnectionString connectionString)
     {
-        if (HasEmbeddedAuth(connectionString))
+        var destination = ChronicleDestination.For(connectionString);
+        var explicitCredentials = ResolveExplicitCredentials(connectionString);
+        if (explicitCredentials is not null)
         {
-            return connectionString;
+            return explicitCredentials;
         }
 
-        // 1. Explicit MCP options take precedence so the server can be configured independently.
+        if (CanUseLogin(destination))
+        {
+            return connectionString.WithApiKey(Context.AccessToken!).ToString();
+        }
+
+        if (CanUseContextCredentials(destination))
+        {
+            return connectionString.WithCredentials(Context.ClientId!, Context.ClientSecret!).ToString();
+        }
+
+        if (_options.UseDevelopmentCredentials)
+        {
+            return connectionString.WithCredentials(ChronicleConnectionString.DevelopmentClient, ChronicleConnectionString.DevelopmentClientSecret).ToString();
+        }
+
+        throw new InvalidOperationException("Configure Chronicle credentials explicitly. CLI login tokens require a matching tokenServer; development credentials require UseDevelopmentCredentials=true.");
+    }
+
+    string? ResolveExplicitCredentials(ChronicleConnectionString connectionString)
+    {
+        if (connectionString.AuthenticationMode != AuthenticationMode.None)
+        {
+            return connectionString.ToString();
+        }
+
         if (!string.IsNullOrWhiteSpace(_options.ApiKey))
         {
-            return AppendApiKey(connectionString, _options.ApiKey);
+            return connectionString.WithApiKey(_options.ApiKey).ToString();
         }
 
-        if (!string.IsNullOrWhiteSpace(_options.ClientId) && !string.IsNullOrWhiteSpace(_options.ClientSecret))
+        if (HasCredentials(_options.ClientId, _options.ClientSecret))
         {
-            return InsertCredentials(connectionString, _options.ClientId, _options.ClientSecret);
+            return connectionString.WithCredentials(_options.ClientId!, _options.ClientSecret!).ToString();
         }
 
-        // 2. Cached login token from 'cratis chronicle login'.
-        if (!string.IsNullOrWhiteSpace(Context.AccessToken) && IsTokenValid(Context.TokenExpiry))
+        if (FirstNonEmpty(_options.ClientId, _options.ClientSecret, connectionString.Username, connectionString.Password) is not null)
         {
-            return AppendApiKey(connectionString, Context.AccessToken);
+            throw new InvalidOperationException("Chronicle client credentials require both ClientId and ClientSecret.");
         }
 
-        // 3. Service account credentials stored in the CLI context.
-        if (!string.IsNullOrWhiteSpace(Context.ClientId) && !string.IsNullOrWhiteSpace(Context.ClientSecret))
-        {
-            return InsertCredentials(connectionString, Context.ClientId, Context.ClientSecret);
-        }
-
-        // 4. Built-in development credentials for local Chronicle servers.
-        return InsertCredentials(connectionString, ChronicleConnectionString.DevelopmentClient, ChronicleConnectionString.DevelopmentClientSecret);
+        return null;
     }
+
+    bool CanUseLogin(string destination) =>
+        !string.IsNullOrWhiteSpace(Context.AccessToken) && IsTokenValid(Context.TokenExpiry) &&
+        string.Equals(Context.TokenServer, destination, StringComparison.OrdinalIgnoreCase);
+
+    bool CanUseContextCredentials(string destination) =>
+        HasCredentials(Context.ClientId, Context.ClientSecret) && !string.IsNullOrWhiteSpace(Context.Server) &&
+        string.Equals(ChronicleDestination.For(new ChronicleConnectionString(Context.Server)), destination, StringComparison.Ordinal);
 }

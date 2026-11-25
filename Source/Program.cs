@@ -4,16 +4,11 @@
 using Cratis.Chronicle.Mcp.Authorization;
 using Cratis.Chronicle.Mcp.Configuration;
 using Cratis.Chronicle.Mcp.Connection;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-var builder = Host.CreateApplicationBuilder(args);
-
-builder.Configuration
-    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-    .AddEnvironmentVariables();
+var builder = McpHostConfiguration.CreateBuilder(args);
 
 builder.Services.AddDeploymentPolicy(builder.Configuration.GetSection(McpOptionsBinding.SectionPath));
 
