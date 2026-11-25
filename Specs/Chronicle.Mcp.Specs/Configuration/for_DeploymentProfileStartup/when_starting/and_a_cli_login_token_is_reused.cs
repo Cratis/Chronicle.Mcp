@@ -21,7 +21,8 @@ public class and_a_cli_login_token_is_reused : for_ChronicleConnectionConfigurat
         _options.Authorization = new() { ExpiresAt = DateTimeOffset.UtcNow.AddHours(1), Allowlist = [new() { EventStore = "orders", Namespace = "support", Operations = ["stop_job"] }] };
         var monitor = Substitute.For<IOptionsMonitor<McpServerOptions>>();
         monitor.CurrentValue.Returns(_options);
-        var credentials = new MutationCredentialPolicy(new(Options.Create(_options)));
+        var configuration = new ChronicleConnectionConfiguration(Options.Create(_options));
+        var credentials = new MutationCredentialPolicy(() => configuration);
         _logger = Substitute.For<ILogger<MutationPolicyWarnings>>();
         _logger.IsEnabled(LogLevel.Warning).Returns(true);
         _startup = new(monitor, new(new(typeof(ToolCatalog).Assembly)), TimeProvider.System, credentials, new(credentials, _logger, TimeProvider.System));

@@ -8,6 +8,7 @@ using Cratis.Execution;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Cratis.Chronicle.Mcp.Connection;
 
@@ -46,6 +47,7 @@ public static class ChronicleMcpServiceCollectionExtensions
         var correlationIdAccessor = serviceProvider.GetRequiredService<ICorrelationIdAccessor>();
 
         var connectionString = new ChronicleConnectionString(configuration.ResolveConnectionString());
+        MutationCredentialPolicy.ValidateConnection(connectionString, serviceProvider.GetRequiredService<IOptions<McpServerOptions>>().Value);
 
         // Ownership of the token provider is transferred to the ChronicleConnection, which disposes it when it is disposed.
 #pragma warning disable CA2000

@@ -20,7 +20,7 @@ public class a_startup : Authorization.Specs.given.a_policy
         _settings.ClientSecret = "spec-secret";
         _logger = Substitute.For<ILogger<MutationPolicyWarnings>>();
         _logger.IsEnabled(LogLevel.Warning).Returns(true);
-        var credentials = new MutationCredentialPolicy(_configuration);
+        var credentials = new MutationCredentialPolicy(() => _configuration);
         _startup = new(_monitor, _policy, _clock, credentials, new(credentials, _logger, _clock));
     }
 

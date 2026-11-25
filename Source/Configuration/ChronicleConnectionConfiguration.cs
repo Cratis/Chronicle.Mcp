@@ -10,7 +10,8 @@ namespace Cratis.Chronicle.Mcp.Configuration;
 /// Resolves explicitly configured Chronicle settings without discovering files in the working directory.
 /// </summary>
 /// <param name="options">The MCP server options.</param>
-public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options)
+/// <param name="timeProvider">The clock for CLI login expiration; defaults to the system clock.</param>
+public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options, TimeProvider? timeProvider = null)
 {
     /// <summary>
     /// The default event store name.
@@ -27,6 +28,7 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
     /// </summary>
     public const string ConnectionStringEnvVar = "CHRONICLE_CONNECTION_STRING";
 
+    readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
     readonly McpServerOptions _options = options.Value;
     readonly ChronicleCliConfiguration _configuration = LoadCliConfiguration(options.Value);
 
@@ -84,9 +86,6 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
 
         return ChronicleCliConfiguration.Load(options.CliConfigurationPath);
     }
-
-    static bool IsTokenValid(string? tokenExpiry) =>
-        DateTimeOffset.TryParse(tokenExpiry, out var expiry) && expiry > DateTimeOffset.UtcNow.AddMinutes(1);
 
     static bool HasCredentials(string? clientId, string? clientSecret) =>
         !string.IsNullOrWhiteSpace(clientId) && !string.IsNullOrWhiteSpace(clientSecret);
@@ -157,6 +156,9 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
         string.Equals(Context.TokenServer, ChronicleDestination.For(connectionString), StringComparison.OrdinalIgnoreCase);
 
     bool HasValidLogin() => !string.IsNullOrWhiteSpace(Context.AccessToken) && IsTokenValid(Context.TokenExpiry);
+
+    bool IsTokenValid(string? tokenExpiry) =>
+        DateTimeOffset.TryParse(tokenExpiry, out var expiry) && expiry > _timeProvider.GetUtcNow().AddMinutes(1);
 
     bool CanUseContextCredentials(ChronicleConnectionString connectionString) =>
         HasCredentials(Context.ClientId, Context.ClientSecret) && !string.IsNullOrWhiteSpace(Context.Server) &&

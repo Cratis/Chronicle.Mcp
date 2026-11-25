@@ -32,7 +32,7 @@ public static class DeploymentRegistration
         services.AddSingleton(new ToolCatalog(typeof(DeploymentRegistration).Assembly));
         services.AddSingleton<MutationPolicy>();
         services.TryAddSingleton<ChronicleConnectionConfiguration>();
-        services.AddSingleton<MutationCredentialPolicy>();
+        services.AddSingleton(sp => new MutationCredentialPolicy(() => sp.GetRequiredService<ChronicleConnectionConfiguration>()));
         services.AddSingleton<MutationPolicyWarnings>();
         services.AddLogging();
         services.AddTransient<MutationAuthorizer>();
