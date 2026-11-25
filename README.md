@@ -101,7 +101,8 @@ they use the `Cratis__Chronicle__Mcp__` prefix:
 | Option | Environment variable | Description |
 | ------ | -------------------- | ----------- |
 | `Profile` | `Cratis__Chronicle__Mcp__Profile` | `ReadOnly` (default) or `Mutation`; unknown values prevent startup. |
-| `Authorization` | `Cratis__Chronicle__Mcp__Authorization__...` | Mutation policy: principal, expiration, revoked principals, and scoped grants. See [Deployment profiles](./Documentation/deployment-profiles.md). |
+| `Authorization` | `Cratis__Chronicle__Mcp__Authorization__...` | Local Mutation bounds: `Allowlist` entries with store, namespace, and exact operations; `ExpiresAt` requires a future timestamp with an offset or `Z`. Legacy principal/grants/revocations remain supported but deprecated. See [Deployment profiles](./Documentation/deployment-profiles.md). |
+| `Authorization.AllowDevelopmentCredentials` | `Cratis__Chronicle__Mcp__Authorization__AllowDevelopmentCredentials` | Defaults to `false`; dangerous opt-in for Mutation with well-known development credentials. Warns on every start. |
 | `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Required unless supplied by a selected CLI context or development opt-in. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from (defaults to the active context). |
 | `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Defaults to `false`; set to `true` to read the explicitly selected CLI configuration. |
@@ -112,7 +113,11 @@ they use the `Cratis__Chronicle__Mcp__` prefix:
 | `EventStore` | `Cratis__Chronicle__Mcp__EventStore` | The default event store used by tools when none is specified. Defaults to `default`. |
 | `Namespace` | `Cratis__Chronicle__Mcp__Namespace` | The default namespace used by tools when none is specified. Defaults to `Default`. |
 
-Job control requires the `Mutation` profile and a matching grant for the deployment principal, store, namespace, operation, and job ID. A connection string or Chronicle credentials alone never enable mutations. Keep credentials in environment variables or a secret store, never in `server.json` or a committed `appsettings.json`. See [Deployment profiles](./Documentation/deployment-profiles.md) for policy examples and denial codes.
+Job control requires the `Mutation` profile, a future policy expiry, and matching local bounds. The principal-free `Authorization.Allowlist` permits exact operations in a store/namespace across all jobs; legacy grants retain principal, target, and revocation restrictions. When mixed, both policies must allow the call. Any legacy key present requires a valid legacy policy; removing those keys deliberately removes their restrictions.
+
+Connection credentials establish the actual Chronicle caller. `Authorization.Principal` is only a deprecated local selector, not an authenticated identity. Dedicated client credentials represent the application, not a delegated human. Local policy does not prove per-client job permissions in Chronicle; Chronicle remains authoritative. Keep credentials in environment variables or a secret store, never in `server.json` or a committed `appsettings.json`.
+
+**Changed / Security:** Mutation rejects well-known development credentials unless `Authorization.AllowDevelopmentCredentials=true`; `UseDevelopmentCredentials=true` alone is insufficient. That dangerous exception warns on each start. API keys and reused CLI login tokens remain accepted but warn to recommend dedicated client credentials. ReadOnly behavior and credential precedence are unchanged. See [Deployment profiles](./Documentation/deployment-profiles.md) for examples, migration warnings, wildcard scope risks, and denial codes.
 
 ## Prompts / Tools
 

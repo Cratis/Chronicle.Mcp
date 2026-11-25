@@ -36,10 +36,12 @@ All options live under the `Cratis:Chronicle:Mcp` configuration section. As envi
 | Option | Environment variable | Description |
 | ------ | -------------------- | ----------- |
 | `Profile` | `Cratis__Chronicle__Mcp__Profile` | `ReadOnly` (default) or `Mutation`. An unknown value prevents startup. |
-| `Authorization.Principal` | `Cratis__Chronicle__Mcp__Authorization__Principal` | Identity this process acts for. Required and non-blank in `Mutation`. |
-| `Authorization.ExpiresAt` | `Cratis__Chronicle__Mcp__Authorization__ExpiresAt` | Policy expiration as an ISO-8601 timestamp. Required and in the future at mutation startup. |
-| `Authorization.RevokedPrincipals` | `Cratis__Chronicle__Mcp__Authorization__RevokedPrincipals__0` | Indexed list of revoked principals. Defaults to empty. |
-| `Authorization.Grants` | `Cratis__Chronicle__Mcp__Authorization__Grants__0__Principal` (and other grant fields) | Indexed grants naming principal, store, namespace, operations, and targets. Defaults to empty; `Mutation` requires a grant for its principal. |
+| `Authorization.Allowlist` | `Cratis__Chronicle__Mcp__Authorization__Allowlist__0__EventStore` (and `Namespace`, indexed `Operations`) | Principal-free local bounds on store, namespace, and exact mutating operations. Applies to all jobs in that scope. Missing/empty operations are invalid. |
+| `Authorization.AllowDevelopmentCredentials` | `Cratis__Chronicle__Mcp__Authorization__AllowDevelopmentCredentials` | Defaults to `false`. Dangerous Mutation-only opt-in for well-known development credentials; warns on every start. Does not enable the connection fallback by itself. |
+| `Authorization.Principal` | `Cratis__Chronicle__Mcp__Authorization__Principal` | Deprecated local policy selector, not an authenticated identity. Required and non-blank only when using legacy policy keys. |
+| `Authorization.ExpiresAt` | `Cratis__Chronicle__Mcp__Authorization__ExpiresAt` | Policy expiration as an ISO-8601 timestamp with `Z` or an explicit offset. Required and in the future at mutation startup; warns beyond 90 days. |
+| `Authorization.RevokedPrincipals` | `Cratis__Chronicle__Mcp__Authorization__RevokedPrincipals__0` | Deprecated indexed list of revoked local policy selectors. Defaults to empty; remains enforced with legacy grants. |
+| `Authorization.Grants` | `Cratis__Chronicle__Mcp__Authorization__Grants__0__Principal` (and other grant fields) | Deprecated indexed grants naming local principal selector, store, namespace, operations, and targets. If any legacy key is present, a complete legacy policy is required and intersects any allowlist. |
 | `ConnectionString` | `Cratis__Chronicle__Mcp__ConnectionString` | The Chronicle connection string. Required unless supplied by a selected CLI context or development opt-in. |
 | `Context` | `Cratis__Chronicle__Mcp__Context` | The CLI context to read connection details from. Defaults to the active context. |
 | `UseCliConfiguration` | `Cratis__Chronicle__Mcp__UseCliConfiguration` | Defaults to `false`; enables the explicitly selected CLI file. |
@@ -52,11 +54,13 @@ All options live under the `Cratis:Chronicle:Mcp` configuration section. As envi
 
 Check which scope arguments each tool accepts and what values the agent supplies. Do not assume a high-level question selected the intended store or namespace.
 
-See [Deployment profiles](deployment-profiles.md) for the complete grant format, wildcard rules, revocation, and denial codes. Profile and authorization settings do not fall back to CLI contexts or development credentials.
+See [Deployment profiles](deployment-profiles.md) for allowlist and legacy grant formats, wildcard rules, migration, revocation, and denial codes. Profile and authorization settings do not fall back to CLI contexts or development credentials.
 
 ## Authentication
 
-Explicit embedded authentication takes precedence, followed by `ApiKey` or a complete `ClientId`/`ClientSecret` pair. Partial client credentials are rejected.
+Explicit embedded authentication takes precedence, followed by `ApiKey` or a complete `ClientId`/`ClientSecret` pair. Partial client credentials are rejected. These effective credentials establish the Chronicle caller, not a configured `Authorization.Principal`; client credentials represent an application, not a delegated human. Local policy does not prove per-client job permissions in Chronicle.
+
+Mutation deployments should use dedicated least-privilege client credentials. API keys and reused CLI login tokens remain accepted but emit a deprecation warning. Well-known development credentials are rejected for Mutation unless `Authorization.AllowDevelopmentCredentials=true` (with a prominent startup warning). `ReadOnly` credential resolution is unchanged.
 
 - **CLI login:** the token must be unexpired and its recorded `tokenServer` must match the configured host and port. TLS must be enabled and certificate validation must not be skipped (`disableTls=false` and `skipTlsValidation=false`). Because the Chronicle client's validation default is permissive, set `skipTlsValidation=false` explicitly when reusing a CLI login. Tokens without a destination or for another destination are never sent. Log in again with a CLI version that records `tokenServer` to replace an unbound login. CLI service-account credentials are used only for the context's own destination.
 - **Client credentials (OAuth):** the token endpoint comes from the configured server address. Tokens are cached under `~/.cratis/mcp/tokens`, separately from the CLI's unscoped cache. The cache key includes destination, context and client ID; each cached token also records its destination, which must match before reuse. The MCP server never reads the CLI's shared OAuth token cache.
@@ -65,6 +69,8 @@ Explicit embedded authentication takes precedence, followed by `ApiKey` or a com
 Explicit API keys, embedded credentials and explicit `ClientId`/`ClientSecret` options support SRV, multi-host and load-balancer connections. OAuth connections on those topologies bypass the disk token cache, rather than treating a topology-wide key as proof of the issuing server. Fixed destinations retain destination-bound disk caching. Implicit CLI and development credentials require one fixed destination.
 
 ## Migrating existing configuration
+
+**Changed / Security:** Mutation now rejects well-known development credentials unless explicitly opted in with `Cratis__Chronicle__Mcp__Authorization__AllowDevelopmentCredentials=true`. `UseDevelopmentCredentials=true` alone no longer suffices for Mutation. Keep this exception isolated to local development. Existing valid legacy mutation policies keep working with a deprecation warning; replacing them with an allowlist deliberately removes their target and revocation restrictions. Offset-less policy expiration timestamps must be replaced with an explicit offset or `Z`.
 
 Replace implicit working-directory configuration and command-line overrides with `--config`, `CHRONICLE_MCP_CONFIG`, or option environment variables. Enable CLI configuration explicitly and supply `CliConfigurationPath` if you use it. CLI login-token reuse requires verified TLS; explicitly set `skipTlsValidation=false`. Supply credentials or opt into development credentials for local development. Existing unscoped OAuth cache files are ignored; MCP obtains its own token and caches it only for a fixed destination.
 

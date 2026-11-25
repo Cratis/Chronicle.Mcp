@@ -9,7 +9,9 @@ using Cratis.Chronicle.Mcp.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 
 namespace Cratis.Chronicle.Mcp.Configuration.for_McpOptionsBinding.given;
 
@@ -21,15 +23,22 @@ public class a_layered_policy : Authorization.Specs.given.a_policy
     protected IConfigurationRoot _root;
     protected ServiceProvider _bindingProvider;
     protected Exception? _error;
+    protected ILogger<MutationPolicyWarnings> _logger;
 
     void Establish()
     {
+        _settings.ConnectionString = "chronicle://localhost:35000";
+        _settings.ClientId = "spec-client";
+        _settings.ClientSecret = "spec-secret";
         _json = JsonSerializer.SerializeToNode(_settings).AsObject();
+        _json["Authorization"].AsObject().Remove("Allowlist");
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(_json.ToJsonString()));
         _jsonProvider = new(new() { Stream = stream });
         _overlay = new();
         _root = new ConfigurationBuilder().Add(_jsonProvider).Add(_overlay).Build();
-        _bindingProvider = new ServiceCollection().AddSingleton(_clock).AddDeploymentPolicy(_root).BuildServiceProvider();
+        _logger = Substitute.For<ILogger<MutationPolicyWarnings>>();
+        _logger.IsEnabled(LogLevel.Warning).Returns(true);
+        _bindingProvider = new ServiceCollection().AddSingleton(_logger).AddSingleton(_clock).AddDeploymentPolicy(_root).BuildServiceProvider();
         _monitor = _bindingProvider.GetRequiredService<IOptionsMonitor<McpServerOptions>>();
     }
 

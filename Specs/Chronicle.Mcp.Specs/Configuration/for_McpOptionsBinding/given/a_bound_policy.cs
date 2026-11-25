@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Cratis.Chronicle.Mcp.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,13 +14,17 @@ namespace Cratis.Chronicle.Mcp.Configuration.for_McpOptionsBinding.given;
 
 public class a_bound_policy : Authorization.Specs.given.a_policy
 {
+    static readonly JsonSerializerOptions _serializerOptions = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
     protected IConfigurationRoot _root;
     protected ServiceProvider _bindingProvider;
     protected Exception? _error;
 
     void Establish()
     {
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(_settings)));
+        _settings.ConnectionString = "chronicle://localhost:35000";
+        _settings.ClientId = "spec-client";
+        _settings.ClientSecret = "spec-secret";
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(_settings, _serializerOptions)));
         var json = new ConfigurationBuilder().AddJsonStream(stream).Build();
         _root = new ConfigurationBuilder().AddInMemoryCollection(json.AsEnumerable().Where(setting => setting.Key.Length > 0)).Build();
         _bindingProvider = new ServiceCollection().AddSingleton(_clock).AddDeploymentPolicy(_root).BuildServiceProvider();

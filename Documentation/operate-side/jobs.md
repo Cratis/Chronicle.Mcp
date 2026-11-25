@@ -7,7 +7,7 @@ description: Use Chronicle.Mcp tools to list Chronicle jobs, inspect their progr
 
 Chronicle runs long-lived work, including replays, projection rebuilds, and other maintenance, as jobs. Use Chronicle MCP to find a job, inspect its progress, and see which steps have completed or stopped. You can do that investigation in the default `ReadOnly` profile without enabling job control.
 
-Only `stop_job`, `resume_job`, and `delete_job` change job state. They are unavailable in `ReadOnly` and require the `Mutation` profile plus a matching grant for the principal, event store, namespace, operation, and job ID. [Deployment profiles](../deployment-profiles.md) explains how that authority is bounded.
+Only `stop_job`, `resume_job`, and `delete_job` change job state. They are unavailable in `ReadOnly` and require the `Mutation` profile plus an unexpired local policy. A principal-free allowlist bounds the event store, namespace, and exact operation across all job IDs in that scope. Deprecated legacy grants still enforce their principal-selector, job-target, and revocation restrictions; when combined with an allowlist, both must permit the call. Connection credentials identify the Chronicle caller, not a configured principal. The kernel currently lacks per-client job authorization; that separate work is tracked in [Chronicle #6205](https://github.com/Cratis/Chronicle/issues/6205). This local bound does not prove per-client job permissions in Chronicle. [Deployment profiles](../deployment-profiles.md) explains the boundary and migration.
 
 :::danger[Deleting a job is irreversible]
 `delete_job` removes the job; once removed, it cannot be recovered. Stopping a job is different: it keeps its progress and can be resumed. Inspect the job before choosing either action.
