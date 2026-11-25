@@ -18,6 +18,7 @@ The host reads environment variables and, optionally, one explicitly selected JS
 - Pass `--config /absolute/path/settings.json`, or set `CHRONICLE_MCP_CONFIG` to an absolute path. The argument takes precedence.
 - Option environment variables override the selected file. A selected file must exist and contain valid JSON.
 - No working-directory `appsettings.json`, environment-specific file, or user secrets are discovered. Relative configuration paths are rejected.
+- Command-line configuration overrides are not accepted; only `--config` followed by an absolute file path is supported. Logging filters still use the selected file's `Logging` section or environment variables such as `Logging__LogLevel__Default`.
 
 Connection resolution is, first match wins:
 
@@ -57,15 +58,15 @@ See [Deployment profiles](deployment-profiles.md) for the complete grant format,
 
 Explicit embedded authentication takes precedence, followed by `ApiKey` or a complete `ClientId`/`ClientSecret` pair. Partial client credentials are rejected.
 
-- **CLI login:** the token must be unexpired and its recorded `tokenServer` must match the configured host and port. Tokens without a destination or for another destination are never sent. Log in again with a CLI version that records `tokenServer` to replace an unbound login. CLI service-account credentials are used only for the context's own destination.
+- **CLI login:** the token must be unexpired and its recorded `tokenServer` must match the configured host and port. TLS must be enabled and certificate validation must not be skipped (`disableTls=false` and `skipTlsValidation=false`). Because the Chronicle client's validation default is permissive, set `skipTlsValidation=false` explicitly when reusing a CLI login. Tokens without a destination or for another destination are never sent. Log in again with a CLI version that records `tokenServer` to replace an unbound login. CLI service-account credentials are used only for the context's own destination.
 - **Client credentials (OAuth):** the token endpoint comes from the configured server address. Tokens are cached under `~/.cratis/mcp/tokens`, separately from the CLI's unscoped cache. The cache key includes destination, context and client ID; each cached token also records its destination, which must match before reuse. The MCP server never reads the CLI's shared OAuth token cache.
 - **API key:** set `ApiKey` (or embed `apiKey=` in the connection string) to authenticate with a static key instead.
 
-Authenticated connections require a single destination. Multi-host connection strings are rejected rather than sending a cached token to a failover server.
+Explicit API keys, embedded credentials and explicit `ClientId`/`ClientSecret` options support SRV, multi-host and load-balancer connections. OAuth connections on those topologies bypass the disk token cache, rather than treating a topology-wide key as proof of the issuing server. Fixed destinations retain destination-bound disk caching. Implicit CLI and development credentials require one fixed destination.
 
 ## Migrating existing configuration
 
-Replace implicit working-directory configuration with `--config`, `CHRONICLE_MCP_CONFIG`, or option environment variables. Enable CLI configuration explicitly and supply `CliConfigurationPath` if you use it. Supply credentials or opt into development credentials for local development. Existing unscoped OAuth cache files are ignored; MCP obtains its own destination-bound token.
+Replace implicit working-directory configuration and command-line overrides with `--config`, `CHRONICLE_MCP_CONFIG`, or option environment variables. Enable CLI configuration explicitly and supply `CliConfigurationPath` if you use it. CLI login-token reuse requires verified TLS; explicitly set `skipTlsValidation=false`. Supply credentials or opt into development credentials for local development. Existing unscoped OAuth cache files are ignored; MCP obtains its own token and caches it only for a fixed destination.
 
 The development Compose services now publish ports only on `127.0.0.1`, including the Aspire dashboard. Remote machines cannot reach these published ports by default.
 

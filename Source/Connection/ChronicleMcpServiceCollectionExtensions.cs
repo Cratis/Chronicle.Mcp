@@ -25,7 +25,8 @@ public static class ChronicleMcpServiceCollectionExtensions
     /// Unlike the stock <c language="csharp">AddCratisChronicleConnection</c> extension, this registration wires up an
     /// authenticating token provider (OAuth client credentials or a static API key) based on the
     /// resolved connection string, so the server can authenticate against secured Chronicle servers.
-    /// Tokens are cached in a separate MCP-owned cache and validated against the configured destination.
+    /// Tokens for fixed destinations are cached in a separate MCP-owned cache and validated against that destination.
+    /// Explicit OAuth connections using SRV, multiple hosts, or a load-balancer override do not use the disk cache.
     /// </remarks>
     public static IServiceCollection AddChronicleMcpConnection(this IServiceCollection services)
     {
@@ -80,12 +81,9 @@ public static class ChronicleMcpServiceCollectionExtensions
             _ => null
         };
 
-    static DestinationTokenProvider CreateCachingTokenProvider(ChronicleConnectionString connectionString, string contextName, ILoggerFactory loggerFactory)
+    static ITokenProvider CreateCachingTokenProvider(ChronicleConnectionString connectionString, string contextName, ILoggerFactory loggerFactory)
     {
-        var destination = ChronicleDestination.ForTokenCache(connectionString);
-        var cachePath = McpTokenCache.GetPath(destination, contextName, connectionString.Username ?? string.Empty);
-
-        // Ownership of the inner provider is transferred to the DestinationTokenProvider, which disposes it.
+        // Ownership of the inner provider is transferred to the connection or destination-bound provider, which disposes it.
         // The token endpoint is derived from the connection's server address (host:port/connect/token),
         // so there is no separate management-port argument as in earlier Chronicle client releases.
 #pragma warning disable CA2000
@@ -97,6 +95,13 @@ public static class ChronicleMcpServiceCollectionExtensions
             loggerFactory.CreateLogger<OAuthTokenProvider>());
 #pragma warning restore CA2000
 
+        if (!ChronicleDestination.IsFixed(connectionString))
+        {
+            return inner;
+        }
+
+        var destination = ChronicleDestination.ForTokenCache(connectionString);
+        var cachePath = McpTokenCache.GetPath(destination, contextName, connectionString.Username ?? string.Empty);
         return new DestinationTokenProvider(inner, cachePath, destination);
     }
 }

@@ -52,7 +52,8 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
             ? "chronicle://localhost:35000"
             : throw new InvalidOperationException("Configure a Chronicle ConnectionString explicitly, or enable UseDevelopmentCredentials for local development.");
 
-        return ComposeCredentials(new ChronicleConnectionString(connectionString));
+        var parsed = new ChronicleConnectionString(connectionString);
+        return HasEmbeddedCredentials(parsed) ? connectionString : ComposeCredentials(parsed);
     }
 
     /// <summary>
@@ -93,28 +94,39 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
     static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
 
+    static bool UsesVerifiedTls(ChronicleConnectionString connectionString) => !connectionString.DisableTls && !connectionString.SkipTlsValidation;
+
+    static bool HasEmbeddedCredentials(ChronicleConnectionString connectionString) =>
+        HasCredentials(connectionString.Username, connectionString.Password) || !string.IsNullOrWhiteSpace(connectionString.ApiKey);
+
+    static string WithCredentials(ChronicleConnectionString connectionString, string clientId, string clientSecret)
+    {
+        // Connections 19.147.2 emits userinfo verbatim, so encode it before composing the string.
+        return connectionString.WithCredentials(Uri.EscapeDataString(clientId), Uri.EscapeDataString(clientSecret)).ToString();
+    }
+
     string ComposeCredentials(ChronicleConnectionString connectionString)
     {
-        var destination = ChronicleDestination.For(connectionString);
         var explicitCredentials = ResolveExplicitCredentials(connectionString);
         if (explicitCredentials is not null)
         {
             return explicitCredentials;
         }
 
-        if (CanUseLogin(destination))
+        if (CanUseLogin(connectionString))
         {
             return connectionString.WithApiKey(Context.AccessToken!).ToString();
         }
 
-        if (CanUseContextCredentials(destination))
+        if (CanUseContextCredentials(connectionString))
         {
-            return connectionString.WithCredentials(Context.ClientId!, Context.ClientSecret!).ToString();
+            return WithCredentials(connectionString, Context.ClientId!, Context.ClientSecret!);
         }
 
         if (_options.UseDevelopmentCredentials)
         {
-            return connectionString.WithCredentials(ChronicleConnectionString.DevelopmentClient, ChronicleConnectionString.DevelopmentClientSecret).ToString();
+            _ = ChronicleDestination.For(connectionString);
+            return WithCredentials(connectionString, ChronicleConnectionString.DevelopmentClient, ChronicleConnectionString.DevelopmentClientSecret);
         }
 
         throw new InvalidOperationException("Configure Chronicle credentials explicitly. CLI login tokens require a matching tokenServer; development credentials require UseDevelopmentCredentials=true.");
@@ -122,11 +134,6 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
 
     string? ResolveExplicitCredentials(ChronicleConnectionString connectionString)
     {
-        if (HasCredentials(connectionString.Username, connectionString.Password) || !string.IsNullOrWhiteSpace(connectionString.ApiKey))
-        {
-            return connectionString.ToString();
-        }
-
         if (!string.IsNullOrWhiteSpace(_options.ApiKey))
         {
             return connectionString.WithApiKey(_options.ApiKey).ToString();
@@ -134,7 +141,7 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
 
         if (HasCredentials(_options.ClientId, _options.ClientSecret))
         {
-            return connectionString.WithCredentials(_options.ClientId!, _options.ClientSecret!).ToString();
+            return WithCredentials(connectionString, _options.ClientId!, _options.ClientSecret!);
         }
 
         if (FirstNonEmpty(_options.ClientId, _options.ClientSecret, connectionString.Username, connectionString.Password) is not null)
@@ -145,11 +152,13 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
         return null;
     }
 
-    bool CanUseLogin(string destination) =>
-        !string.IsNullOrWhiteSpace(Context.AccessToken) && IsTokenValid(Context.TokenExpiry) &&
-        string.Equals(Context.TokenServer, destination, StringComparison.OrdinalIgnoreCase);
+    bool CanUseLogin(ChronicleConnectionString connectionString) =>
+        HasValidLogin() && UsesVerifiedTls(connectionString) &&
+        string.Equals(Context.TokenServer, ChronicleDestination.For(connectionString), StringComparison.OrdinalIgnoreCase);
 
-    bool CanUseContextCredentials(string destination) =>
+    bool HasValidLogin() => !string.IsNullOrWhiteSpace(Context.AccessToken) && IsTokenValid(Context.TokenExpiry);
+
+    bool CanUseContextCredentials(ChronicleConnectionString connectionString) =>
         HasCredentials(Context.ClientId, Context.ClientSecret) && !string.IsNullOrWhiteSpace(Context.Server) &&
-        string.Equals(ChronicleDestination.For(new ChronicleConnectionString(Context.Server)), destination, StringComparison.Ordinal);
+        string.Equals(ChronicleDestination.For(new ChronicleConnectionString(Context.Server)), ChronicleDestination.For(connectionString), StringComparison.Ordinal);
 }

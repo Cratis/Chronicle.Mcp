@@ -91,9 +91,9 @@ Connection resolution is:
 3. A CLI context, only with `UseCliConfiguration=true` and an absolute `CliConfigurationPath`.
 4. Local development defaults, only with `UseDevelopmentCredentials=true`; otherwise startup refuses missing connection or credentials.
 
-CLI login tokens require a matching recorded `tokenServer` (host and port). Unbound or mismatched tokens are not sent. OAuth tokens use a separate MCP-owned, destination-bound cache under `~/.cratis/mcp/tokens`; the CLI's shared unscoped cache is never read. Authenticated connections require a single destination, not a multi-host failover list.
+CLI login tokens require a matching recorded `tokenServer` (host and port) and verified TLS (`disableTls=false` and `skipTlsValidation=false`). Unbound or mismatched tokens are not sent. OAuth tokens for fixed destinations use a separate MCP-owned, destination-bound cache under `~/.cratis/mcp/tokens`; the CLI's shared unscoped cache is never read. Explicit credentials continue to support SRV, multi-host and load-balancer connections; OAuth on those topologies bypasses the disk cache. Implicit CLI and development credentials require a fixed destination.
 
-**Upgrading:** replace implicit working-directory configuration with an explicit absolute path or environment variables. Supply credentials or opt into development credentials. To reuse a CLI context, enable it and select its configuration file explicitly; log in again if the login lacks `tokenServer`.
+**Upgrading:** replace implicit working-directory configuration with an explicit absolute path or environment variables. Command-line configuration overrides are no longer accepted; the only supported argument is `--config` with an absolute file path. Logging settings still come from the selected file or environment (for example, `Logging__LogLevel__Default`). Supply credentials or opt into development credentials. To reuse a CLI context, enable it and select its configuration file explicitly; log in again if the login lacks `tokenServer`, and use verified TLS to reuse that login token.
 
 All options live under the `Cratis:Chronicle:Mcp` configuration section. As environment variables
 they use the `Cratis__Chronicle__Mcp__` prefix:

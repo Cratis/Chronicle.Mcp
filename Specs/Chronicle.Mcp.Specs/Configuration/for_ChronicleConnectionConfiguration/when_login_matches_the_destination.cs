@@ -7,7 +7,7 @@ public class when_login_matches_the_destination : given.a_connection_configurati
 {
     void Establish()
     {
-        _options.ConnectionString = "chronicle://SERVER.EXAMPLE:35000";
+        _options.ConnectionString = "chronicle://SERVER.EXAMPLE:35000?skipTlsValidation=false";
         EnableCli();
     }
 

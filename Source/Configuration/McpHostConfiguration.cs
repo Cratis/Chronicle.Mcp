@@ -3,6 +3,7 @@
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Cratis.Chronicle.Mcp.Configuration;
 
@@ -26,12 +27,13 @@ public static class McpHostConfiguration
         }
 
         builder.Configuration.AddEnvironmentVariables();
+        builder.Logging.AddConfiguration(builder.Configuration.GetSection("Logging"));
         return builder;
     }
 
     static string? ResolvePath(string[] args)
     {
-        if (args.Length != 0 && (args.Length != 2 || args[0] != "--config"))
+        if (args.Length != 0 && !HasConfigPath(args))
         {
             throw new ArgumentException("Use --config followed by an absolute configuration file path.", nameof(args));
         }
@@ -44,4 +46,6 @@ public static class McpHostConfiguration
 
         return path;
     }
+
+    static bool HasConfigPath(string[] args) => args.Length == 2 && args[0] == "--config";
 }

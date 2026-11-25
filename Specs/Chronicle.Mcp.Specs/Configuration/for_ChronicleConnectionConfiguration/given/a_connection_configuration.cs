@@ -9,12 +9,15 @@ namespace Cratis.Chronicle.Mcp.Configuration.for_ChronicleConnectionConfiguratio
 
 public class a_connection_configuration : Configuration.given.a_process_configuration
 {
+    protected const string ReservedClientId = "synthetic @:/%?# client";
+    protected const string ReservedClientSecret = "synthetic @:/%?# secret";
+
     static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    protected McpServerOptions _options = new() { ConnectionString = "chronicle://server.example:35000" };
+    protected McpServerOptions _options = new() { ConnectionString = "chronicle://server.example:35000?skipTlsValidation=false" };
     protected ChronicleCliContext _context = new()
     {
-        Server = "chronicle://server.example:35000",
+        Server = "chronicle://server.example:35000?skipTlsValidation=false",
         AccessToken = "synthetic-login-token",
         TokenExpiry = DateTimeOffset.UtcNow.AddHours(1).ToString("O"),
         TokenServer = "server.example:35000"

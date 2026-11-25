@@ -7,7 +7,7 @@ public class when_multiple_destinations_are_configured : given.a_connection_conf
 {
     void Establish()
     {
-        _options.ConnectionString = "chronicle://server.example:35000,other.example:35000";
+        _options.ConnectionString = "chronicle://server.example:35000,other.example:35000?skipTlsValidation=false";
         EnableCli();
     }
 

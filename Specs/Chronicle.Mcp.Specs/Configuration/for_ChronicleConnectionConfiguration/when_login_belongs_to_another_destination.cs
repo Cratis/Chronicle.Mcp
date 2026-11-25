@@ -7,7 +7,7 @@ public class when_login_belongs_to_another_destination : given.a_connection_conf
 {
     void Establish()
     {
-        _options.ConnectionString = "chronicle://other.example:35000";
+        _options.ConnectionString = "chronicle://other.example:35000?skipTlsValidation=false";
         EnableCli();
     }
 

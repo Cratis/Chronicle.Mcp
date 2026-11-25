@@ -38,6 +38,14 @@ public static class ChronicleDestination
     }
 
     /// <summary>
+    /// Determines whether tokens can be cached against one fixed destination.
+    /// </summary>
+    /// <param name="connectionString">The selected connection.</param>
+    /// <returns>Whether the configured target identifies one fixed server.</returns>
+    public static bool IsFixed(ChronicleConnectionString connectionString) =>
+        !connectionString.IsSrv && string.IsNullOrWhiteSpace(connectionString.LoadBalancer) && connectionString.ServerAddresses.Count == 1;
+
+    /// <summary>
     /// Gets the MCP cache destination, including its transport security settings.
     /// </summary>
     /// <param name="connectionString">The selected connection.</param>

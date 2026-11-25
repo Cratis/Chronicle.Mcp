@@ -7,7 +7,10 @@
                 "run",
                 "--project",
                 "${workspaceFolder}/Source/Chronicle.Mcp.csproj"
-            ]
+            ],
+            "env": {
+                "Cratis__Chronicle__Mcp__UseDevelopmentCredentials": "true"
+            }
         },
         "Chronicle": {
             "type": "stdio",
@@ -17,6 +20,7 @@
                 "-i",
                 "--rm",
                 "-eCratis__Chronicle__Mcp__ConnectionString=chronicle://host.docker.internal:35000/?disableTls=true",
+                "-eCratis__Chronicle__Mcp__UseDevelopmentCredentials=true",
                 "cratis/chronicle-mcp"
             ]
         }
