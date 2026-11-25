@@ -87,12 +87,17 @@ public sealed class DestinationTokenProvider(ITokenProvider innerProvider, strin
     void WriteCache(TokenCache cache)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
-        using var stream = new FileStream(cachePath, new FileStreamOptions
+        var options = new FileStreamOptions
         {
             Mode = FileMode.Create,
-            Access = FileAccess.Write,
-            UnixCreateMode = OperatingSystem.IsWindows() ? null : UnixFileMode.UserRead | UnixFileMode.UserWrite
-        });
+            Access = FileAccess.Write
+        };
+        if (!OperatingSystem.IsWindows())
+        {
+            options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        }
+
+        using var stream = new FileStream(cachePath, options);
         JsonSerializer.Serialize(stream, cache);
     }
 

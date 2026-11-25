@@ -41,6 +41,7 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
     /// Resolves the connection string and credentials, refusing implicit authentication defaults.
     /// </summary>
     /// <returns>The resolved connection string.</returns>
+    /// <exception cref="InvalidOperationException">No connection is configured and development credentials are disabled.</exception>
     public string ResolveConnectionString()
     {
         var connectionString = FirstNonEmpty(
@@ -121,7 +122,7 @@ public class ChronicleConnectionConfiguration(IOptions<McpServerOptions> options
 
     string? ResolveExplicitCredentials(ChronicleConnectionString connectionString)
     {
-        if (connectionString.AuthenticationMode != AuthenticationMode.None)
+        if (HasCredentials(connectionString.Username, connectionString.Password) || !string.IsNullOrWhiteSpace(connectionString.ApiKey))
         {
             return connectionString.ToString();
         }

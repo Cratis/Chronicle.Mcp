@@ -13,7 +13,7 @@ public class when_transport_security_changes : Specification
 
     void Because()
     {
-        _secure = ChronicleDestination.ForTokenCache(new ChronicleConnectionString("chronicle://server.example:35000"));
+        _secure = ChronicleDestination.ForTokenCache(new ChronicleConnectionString("chronicle://server.example:35000?skipTlsValidation=false"));
         _plaintext = ChronicleDestination.ForTokenCache(new ChronicleConnectionString("chronicle://server.example:35000?disableTls=true"));
         _unvalidated = ChronicleDestination.ForTokenCache(new ChronicleConnectionString("chronicle://server.example:35000?skipTlsValidation=true"));
     }

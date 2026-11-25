@@ -15,6 +15,7 @@ public static class ChronicleDestination
     /// </summary>
     /// <param name="connectionString">The selected connection.</param>
     /// <returns>The destination, without credentials.</returns>
+    /// <exception cref="InvalidOperationException">The connection does not identify one fixed destination.</exception>
     public static string For(ChronicleConnectionString connectionString)
     {
         if (connectionString.IsSrv || !string.IsNullOrWhiteSpace(connectionString.LoadBalancer))

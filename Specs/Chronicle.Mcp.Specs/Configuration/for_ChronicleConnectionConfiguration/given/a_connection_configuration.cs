@@ -9,6 +9,8 @@ namespace Cratis.Chronicle.Mcp.Configuration.for_ChronicleConnectionConfiguratio
 
 public class a_connection_configuration : Configuration.given.a_process_configuration
 {
+    static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     protected McpServerOptions _options = new() { ConnectionString = "chronicle://server.example:35000" };
     protected ChronicleCliContext _context = new()
     {
@@ -24,10 +26,8 @@ public class a_connection_configuration : Configuration.given.a_process_configur
     {
         _options.UseCliConfiguration = true;
         _options.CliConfigurationPath = Path.Combine(_directory, "cli.json");
-        File.WriteAllText(_options.CliConfigurationPath, JsonSerializer.Serialize(new
-        {
-            contexts = new { @default = _context }
-        }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+        var configuration = new { contexts = new { @default = _context } };
+        File.WriteAllText(_options.CliConfigurationPath, JsonSerializer.Serialize(configuration, _jsonOptions));
     }
 
     protected void Resolve() => _result = new ChronicleConnectionString(new ChronicleConnectionConfiguration(Options.Create(_options)).ResolveConnectionString());

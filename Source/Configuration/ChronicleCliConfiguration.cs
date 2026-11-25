@@ -70,6 +70,7 @@ public class ChronicleCliConfiguration
     /// </summary>
     /// <param name="path">The absolute CLI configuration file path.</param>
     /// <returns>The loaded <see cref="ChronicleCliConfiguration"/>.</returns>
+    /// <exception cref="ArgumentException">The selected path is not absolute.</exception>
     public static ChronicleCliConfiguration Load(string path)
     {
         if (!Path.IsPathFullyQualified(path))

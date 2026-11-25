@@ -14,7 +14,7 @@ public static class McpHostConfiguration
     /// <summary>
     /// Creates the MCP host builder using an explicit JSON file and environment variables only.
     /// </summary>
-    /// <param name="args">An optional <c>--config</c> argument and absolute file path.</param>
+    /// <param name="args">An optional <c language="text">--config</c> argument and absolute file path.</param>
     /// <returns>The configured builder.</returns>
     public static HostApplicationBuilder CreateBuilder(string[] args)
     {
