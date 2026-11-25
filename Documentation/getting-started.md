@@ -19,7 +19,7 @@ Before connecting, choose the Chronicle server you intend to inspect and use cre
 
 The server speaks MCP over stdio and ships as a container. This example passes a connection string but does not share host CLI configuration or token files. Configure your agent to launch it. In VS Code, add it to your user settings or to a `.vscode/mcp.json` in your project:
 
-This configuration starts in the safe `ReadOnly` profile. You can inspect jobs, but `stop_job`, `resume_job`, and `delete_job` are not listed or callable. To enable authorized job control, configure a [Mutation deployment profile](deployment-profiles.md).
+This configuration starts in the safe `ReadOnly` profile. You can inspect jobs, but `stop_job`, `resume_job`, and `delete_job` are not listed or callable. To enable job control, configure a [Mutation deployment profile](deployment-profiles.md) with dedicated least-privilege client credentials and a short-lived store/namespace/operation allowlist. The credentials identify the application, not a delegated human; local policy is not proof of per-client job permissions in Chronicle. Legacy principal-based policies remain supported with a deprecation warning. Mutation rejects well-known development credentials unless `Authorization.AllowDevelopmentCredentials=true`, a dangerous local-only exception that warns on each start.
 
 ```json
 {
@@ -39,7 +39,7 @@ This configuration starts in the safe `ReadOnly` profile. You can inspect jobs, 
 }
 ```
 
-On macOS and Windows the host machine is reachable from the container at `host.docker.internal`. The connection string is the only value most setups need to change — everything else has a working local-development default. See [Configuration](configuration.md) for the full resolution order and authentication.
+On macOS and Windows the host machine is reachable from the container at `host.docker.internal`. Supply credentials separately through environment variables or a secret store. For an isolated local ReadOnly deployment, explicitly set `Cratis__Chronicle__Mcp__UseDevelopmentCredentials=true` to use the built-in development credentials. See [Configuration](configuration.md) for the full resolution order and authentication.
 
 ## Ask your first questions
 

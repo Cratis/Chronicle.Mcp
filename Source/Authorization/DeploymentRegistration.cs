@@ -31,6 +31,10 @@ public static class DeploymentRegistration
         services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton(new ToolCatalog(typeof(DeploymentRegistration).Assembly));
         services.AddSingleton<MutationPolicy>();
+        services.TryAddSingleton<ChronicleConnectionConfiguration>();
+        services.AddSingleton(sp => new MutationCredentialPolicy(() => sp.GetRequiredService<ChronicleConnectionConfiguration>()));
+        services.AddSingleton<MutationPolicyWarnings>();
+        services.AddLogging();
         services.AddTransient<MutationAuthorizer>();
         services.AddTransient<AuthorizedToolCalls>();
         services.AddHostedService<DeploymentProfileStartup>();

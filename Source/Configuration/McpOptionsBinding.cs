@@ -38,6 +38,10 @@ public static class McpOptionsBinding
             section.Bind(options);
             var authorization = new MutationAuthorization();
             section.GetSection(nameof(McpServerOptions.Authorization)).Bind(authorization, binder => binder.ErrorOnUnknownConfiguration = true);
+            var sectionPolicy = section.GetSection(nameof(McpServerOptions.Authorization));
+            authorization.LegacyConfigured = sectionPolicy.GetChildren().Any(child =>
+                new[] { "Principal", "Grants", "RevokedPrincipals" }.Contains(child.Key, StringComparer.OrdinalIgnoreCase));
+            if (sectionPolicy.GetChildren().Any(child => string.Equals(child.Key, "Allowlist", StringComparison.OrdinalIgnoreCase))) authorization.Allowlist ??= [];
             options.Authorization = authorization;
         }
         catch (InvalidOperationException)

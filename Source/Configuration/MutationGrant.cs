@@ -4,12 +4,12 @@
 namespace Cratis.Chronicle.Mcp.Configuration;
 
 /// <summary>
-/// Grants specific operations in one store and namespace to a principal.
+/// Represents a deprecated local grant with principal and target restrictions.
 /// </summary>
 public class MutationGrant
 {
     /// <summary>
-    /// Gets or sets the principal, matched exactly.
+    /// Gets or sets the deprecated local policy selector, matched exactly, not an authenticated identity.
     /// </summary>
     public string Principal { get; set; } = string.Empty;
 

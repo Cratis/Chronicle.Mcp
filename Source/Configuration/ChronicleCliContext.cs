@@ -52,6 +52,12 @@ public class ChronicleCliContext
     public string? TokenExpiry { get; set; }
 
     /// <summary>
+    /// Gets or sets the normalized host and port the cached login token was issued for.
+    /// Tokens without this binding are not used.
+    /// </summary>
+    public string? TokenServer { get; set; }
+
+    /// <summary>
     /// Gets or sets the username of the currently logged-in user.
     /// </summary>
     public string? LoggedInUser { get; set; }

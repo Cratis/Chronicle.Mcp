@@ -57,7 +57,7 @@ public class ChronicleCliConfiguration
     /// <returns>The full path to the token cache file.</returns>
     /// <remarks>
     /// The key should uniquely identify the context and credentials (e.g. <c language="csharp">"{contextName}_{clientId}"</c>).
-    /// This matches the CLI so tokens are shared between the CLI and the MCP server.
+    /// This identifies the CLI-owned cache. The MCP connection never reads these unscoped files.
     /// </remarks>
     public static string GetTokenCachePath(string key)
     {
@@ -66,38 +66,24 @@ public class ChronicleCliConfiguration
     }
 
     /// <summary>
-    /// Loads the configuration from disk, returning defaults if the file does not exist.
+    /// Loads the configuration from an explicitly selected file.
     /// </summary>
+    /// <param name="path">The absolute CLI configuration file path.</param>
     /// <returns>The loaded <see cref="ChronicleCliConfiguration"/>.</returns>
-    public static ChronicleCliConfiguration Load()
+    /// <exception cref="ArgumentException">The selected path is not absolute.</exception>
+    public static ChronicleCliConfiguration Load(string path)
     {
-        var path = GetConfigPath();
-        if (!File.Exists(path))
+        if (!Path.IsPathFullyQualified(path))
         {
-            return new ChronicleCliConfiguration();
+            throw new ArgumentException("The CLI configuration file path must be absolute.", nameof(path));
         }
 
-        try
-        {
-            var json = File.ReadAllText(path);
-            using var document = JsonDocument.Parse(json);
-            var root = document.RootElement;
-
-            // Detect legacy flat format: has "defaultServer" or "clientId" but no "contexts".
-            if ((root.TryGetProperty("defaultServer", out _) || root.TryGetProperty("clientId", out _)) &&
-                !root.TryGetProperty("contexts", out _))
-            {
-                return ReadLegacy(root);
-            }
-
-            return JsonSerializer.Deserialize<ChronicleCliConfiguration>(json, _jsonOptions) ?? new ChronicleCliConfiguration();
-        }
-        catch (JsonException)
-        {
-            // A malformed config file should not prevent the MCP server from falling back to
-            // environment variables and built-in development defaults.
-            return new ChronicleCliConfiguration();
-        }
+        var json = File.ReadAllText(path);
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+        return IsLegacy(root)
+            ? ReadLegacy(root)
+            : JsonSerializer.Deserialize<ChronicleCliConfiguration>(json, _jsonOptions) ?? new ChronicleCliConfiguration();
     }
 
     /// <summary>
@@ -111,6 +97,12 @@ public class ChronicleCliConfiguration
         return Contexts.TryGetValue(contextName, out var ctx) ? ctx : new ChronicleCliContext();
     }
 
+    static bool IsLegacy(JsonElement root) =>
+        !root.TryGetProperty("contexts", out _) && HasLegacySettings(root);
+
+    static bool HasLegacySettings(JsonElement root) =>
+        root.TryGetProperty("defaultServer", out _) || root.TryGetProperty("clientId", out _);
+
     static ChronicleCliConfiguration ReadLegacy(JsonElement root)
     {
         var ctx = new ChronicleCliContext
@@ -122,6 +114,7 @@ public class ChronicleCliConfiguration
             ClientSecret = GetStringProperty(root, "clientSecret"),
             AccessToken = GetStringProperty(root, "accessToken"),
             TokenExpiry = GetStringProperty(root, "tokenExpiry"),
+            TokenServer = GetStringProperty(root, "tokenServer"),
             LoggedInUser = GetStringProperty(root, "loggedInUser")
         };
 

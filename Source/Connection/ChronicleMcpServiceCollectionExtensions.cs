@@ -8,6 +8,7 @@ using Cratis.Execution;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Cratis.Chronicle.Mcp.Connection;
 
@@ -25,7 +26,8 @@ public static class ChronicleMcpServiceCollectionExtensions
     /// Unlike the stock <c language="csharp">AddCratisChronicleConnection</c> extension, this registration wires up an
     /// authenticating token provider (OAuth client credentials or a static API key) based on the
     /// resolved connection string, so the server can authenticate against secured Chronicle servers.
-    /// Tokens are cached on disk in the same location as the Cratis CLI for interoperability.
+    /// Tokens for fixed destinations are cached in a separate MCP-owned cache and validated against that destination.
+    /// Explicit OAuth connections using SRV, multiple hosts, or a load-balancer override do not use the disk cache.
     /// </remarks>
     public static IServiceCollection AddChronicleMcpConnection(this IServiceCollection services)
     {
@@ -45,6 +47,7 @@ public static class ChronicleMcpServiceCollectionExtensions
         var correlationIdAccessor = serviceProvider.GetRequiredService<ICorrelationIdAccessor>();
 
         var connectionString = new ChronicleConnectionString(configuration.ResolveConnectionString());
+        MutationCredentialPolicy.ValidateConnection(connectionString, serviceProvider.GetRequiredService<IOptions<McpServerOptions>>().Value);
 
         // Ownership of the token provider is transferred to the ChronicleConnection, which disposes it when it is disposed.
 #pragma warning disable CA2000
@@ -80,12 +83,9 @@ public static class ChronicleMcpServiceCollectionExtensions
             _ => null
         };
 
-    static FileSystemCachingTokenProvider CreateCachingTokenProvider(ChronicleConnectionString connectionString, string contextName, ILoggerFactory loggerFactory)
+    static ITokenProvider CreateCachingTokenProvider(ChronicleConnectionString connectionString, string contextName, ILoggerFactory loggerFactory)
     {
-        var cachePath = ChronicleCliConfiguration.GetTokenCachePath($"{contextName}_{connectionString.Username ?? string.Empty}");
-        Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
-
-        // Ownership of the inner provider is transferred to the FileSystemCachingTokenProvider, which disposes it.
+        // Ownership of the inner provider is transferred to the connection or destination-bound provider, which disposes it.
         // The token endpoint is derived from the connection's server address (host:port/connect/token),
         // so there is no separate management-port argument as in earlier Chronicle client releases.
 #pragma warning disable CA2000
@@ -97,6 +97,13 @@ public static class ChronicleMcpServiceCollectionExtensions
             loggerFactory.CreateLogger<OAuthTokenProvider>());
 #pragma warning restore CA2000
 
-        return new FileSystemCachingTokenProvider(inner, cachePath);
+        if (!ChronicleDestination.IsFixed(connectionString))
+        {
+            return inner;
+        }
+
+        var destination = ChronicleDestination.ForTokenCache(connectionString);
+        var cachePath = McpTokenCache.GetPath(destination, contextName, connectionString.Username ?? string.Empty);
+        return new DestinationTokenProvider(inner, cachePath, destination);
     }
 }

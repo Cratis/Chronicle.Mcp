@@ -20,10 +20,19 @@ public static class AuthorizationConfigurationShape
         [nameof(MutationGrant.Targets)] = section => ValidateCollection(section, ValidateScalarElement)
     };
 
+    static readonly IReadOnlyDictionary<string, Action<IConfigurationSection>> _allowlistSettings = new Dictionary<string, Action<IConfigurationSection>>(StringComparer.OrdinalIgnoreCase)
+    {
+        [nameof(MutationAllowlistEntry.EventStore)] = ValidateScalar,
+        [nameof(MutationAllowlistEntry.Namespace)] = ValidateScalar,
+        [nameof(MutationAllowlistEntry.Operations)] = section => ValidateCollection(section, ValidateScalarElement)
+    };
+
     static readonly IReadOnlyDictionary<string, Action<IConfigurationSection>> _authorizationSettings = new Dictionary<string, Action<IConfigurationSection>>(StringComparer.OrdinalIgnoreCase)
     {
         [nameof(MutationAuthorization.Principal)] = ValidateScalar,
-        [nameof(MutationAuthorization.ExpiresAt)] = ValidateScalar,
+        [nameof(MutationAuthorization.ExpiresAt)] = ValidateExpiration,
+        [nameof(MutationAuthorization.AllowDevelopmentCredentials)] = ValidateScalar,
+        [nameof(MutationAuthorization.Allowlist)] = section => ValidateCollection(section, entry => ValidateObject(entry, _allowlistSettings)),
         [nameof(MutationAuthorization.RevokedPrincipals)] = section => ValidateCollection(section, ValidateScalarElement),
         [nameof(MutationAuthorization.Grants)] = section => ValidateCollection(section, ValidateGrant)
     };
@@ -34,6 +43,12 @@ public static class AuthorizationConfigurationShape
     /// <param name="section">The MCP configuration section.</param>
     /// <exception cref="InvalidMcpConfiguration">An authorization setting has an invalid shape or name.</exception>
     public static void Validate(IConfiguration section) => ValidateObject(section.GetSection(nameof(McpServerOptions.Authorization)), _authorizationSettings);
+
+    static void ValidateExpiration(IConfigurationSection section)
+    {
+        ValidateScalar(section);
+        if (!AuthorizationExpiration.IsValid(section.Value)) throw Invalid(section);
+    }
 
     static void ValidateGrant(IConfigurationSection section) => ValidateObject(section, _grantSettings);
 

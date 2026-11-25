@@ -28,17 +28,15 @@ public class MutationAuthorizer(MutationPolicy policy, ChronicleConnectionConfig
         if (target is null) return new(DenialCodes.BadRequest);
 
         var authorization = settings.Authorization;
-        if (string.IsNullOrWhiteSpace(authorization.Principal)) return new(DenialCodes.NotAuthenticated);
+        if (authorization.UsesLegacyPolicy && string.IsNullOrWhiteSpace(authorization.Principal)) return new(DenialCodes.NotAuthenticated);
         if (settings.Profile != DeploymentProfile.Mutation || policy.InvalidSettings(authorization).Any()) return new(DenialCodes.PolicyInvalid);
         if (authorization.ExpiresAt is null || authorization.ExpiresAt <= timeProvider.GetUtcNow()) return new(DenialCodes.PolicyExpired);
-        if (authorization.RevokedPrincipals.Contains(authorization.Principal, StringComparer.Ordinal)) return new(DenialCodes.PrincipalRevoked);
+        if (authorization.UsesLegacyPolicy && authorization.RevokedPrincipals.Contains(authorization.Principal, StringComparer.Ordinal)) return new(DenialCodes.PrincipalRevoked);
 
         var eventStore = configuration.ResolveEventStore(ReadString(arguments, "eventStore"));
         var @namespace = configuration.ResolveNamespace(ReadString(arguments, "namespace"));
-        var matches = authorization.Grants.Any(grant =>
-            string.Equals(grant.Principal, authorization.Principal, StringComparison.Ordinal) &&
-            Matches(grant.EventStore, eventStore) && Matches(grant.Namespace, @namespace) &&
-            grant.Operations.Contains(tool.Name, StringComparer.Ordinal) && grant.Targets.Any(candidate => Matches(candidate, target)));
+        var matches = MatchesLegacy(authorization, tool.Name, eventStore, @namespace, target) &&
+            MatchesAllowlist(authorization, tool.Name, eventStore, @namespace);
 
         return new(matches ? null : DenialCodes.NotAuthorized);
     }
@@ -50,6 +48,16 @@ public class MutationAuthorizer(MutationPolicy policy, ChronicleConnectionConfig
     /// <param name="arguments">The caller's arguments.</param>
     /// <returns>Whether the target parses as its parameter type.</returns>
     public bool HasValidTarget(CatalogTool tool, IDictionary<string, JsonElement>? arguments) => ReadTarget(tool, arguments) is not null;
+
+    static bool MatchesLegacy(MutationAuthorization policy, string operation, string eventStore, string @namespace, string target) =>
+        !policy.UsesLegacyPolicy || policy.Grants.Any(grant =>
+            string.Equals(grant.Principal, policy.Principal, StringComparison.Ordinal) &&
+            Matches(grant.EventStore, eventStore) && Matches(grant.Namespace, @namespace) &&
+            grant.Operations.Contains(operation, StringComparer.Ordinal) && grant.Targets.Any(candidate => Matches(candidate, target)));
+
+    static bool MatchesAllowlist(MutationAuthorization policy, string operation, string eventStore, string @namespace) =>
+        policy.Allowlist?.Any(entry =>
+            Matches(entry.EventStore, eventStore) && Matches(entry.Namespace, @namespace) && entry.Operations.Contains(operation, StringComparer.Ordinal)) != false;
 
     static bool Matches(string granted, string requested) => granted == "*" || string.Equals(granted, requested, StringComparison.Ordinal);
 

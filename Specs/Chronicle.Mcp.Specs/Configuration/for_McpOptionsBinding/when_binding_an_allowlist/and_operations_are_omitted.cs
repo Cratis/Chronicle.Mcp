@@ -1,0 +1,19 @@
+// Copyright (c) Cratis. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using Microsoft.Extensions.Options;
+
+namespace Cratis.Chronicle.Mcp.Configuration.for_McpOptionsBinding.when_binding_an_allowlist;
+
+public class and_operations_are_omitted : given.an_allowlist
+{
+    void Establish()
+    {
+        _authorization["Allowlist"][0].AsObject().Remove("Operations");
+        ReplacePolicy();
+    }
+
+    async Task Because() => _error = await Catch.Exception(Start);
+    [Fact] void should_fail_closed_at_startup() => _error.ShouldBeOfExactType<OptionsValidationException>();
+    [Fact] void should_name_the_missing_operations() => ((OptionsValidationException)_error).Failures.ShouldContain($"{McpOptionsBinding.SectionPath}:Authorization:Allowlist:0:Operations");
+}
