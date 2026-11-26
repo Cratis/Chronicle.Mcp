@@ -12,6 +12,8 @@
   href: read-model-scaffolding.md
 - name: Unconsumed-event audit
   href: unconsumed-event-audit.md
+- name: Audit Screenplay conformance
+  href: screenplay-conformance.md
 - name: Event catalog
   href: event-catalog.md
 - name: Causal trace

@@ -19,6 +19,7 @@ If the server is not connected yet, start with [Getting started](../getting-star
 | [Describe an event type](describe-event-type.md) | `describe_event_type` | Read an event type's real fields and types — the grounding primitive the others build on. |
 | [Read-model scaffolding](read-model-scaffolding.md) | `scaffold_read_model` | Turn a set of event types into a reviewable read model + projection, grounded in their schema. |
 | [Unconsumed-event audit](unconsumed-event-audit.md) | `audit_unconsumed_event_types` | Find events nothing reads, and consumers pointing at event types that no longer exist. |
+| [Screenplay conformance](screenplay-conformance.md) | `audit_screenplay_conformance` | Compare a self-contained model with bounded evidence from one sequence. |
 | [Event catalog](event-catalog.md) | `generate_event_catalog` | Produce a living data dictionary — every event, its fields, and its consumers. |
 | [Causal trace](causal-trace.md) | `explain_causal_trace` | Turn an event source's raw log into a "what happened and why" narrative. |
 
