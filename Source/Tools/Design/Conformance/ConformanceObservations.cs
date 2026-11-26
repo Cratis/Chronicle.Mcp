@@ -23,6 +23,14 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
     const ulong FirstSentinel = ulong.MaxValue - 2;
 
     /// <summary>
+    /// Admits an upstream identifier under the audit's length and character limits.
+    /// </summary>
+    /// <param name="value">The upstream identifier.</param>
+    /// <returns>The same identifier if valid.</returns>
+    /// <exception cref="ConformanceReadException">The identifier is outside the audit's limits.</exception>
+    internal static string Identity(string value) => ConformanceScope.Identifier(value) ? value : throw new ConformanceReadException(ConformanceReadException.Failed);
+
+    /// <summary>
     /// Checks that all three parts of the target exist with exact casing.
     /// </summary>
     /// <returns>A task that completes when the target is confirmed.</returns>
@@ -56,6 +64,7 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
     /// Reads registered event types and expands their known generations.
     /// </summary>
     /// <returns>The distinct registered identities and generations.</returns>
+    /// <exception cref="ConformanceReadException">The registry exceeds the audit's entry limit.</exception>
     internal async Task<ObservedEventType[]> Registrations()
     {
         var entries = Bounded(Data(await services.EventTypes.AllEventTypes(new() { EventStore = scope.EventStore }, context)));
@@ -77,6 +86,7 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
     /// Reads subscriptions from actual namespace observer registrations.
     /// </summary>
     /// <returns>The comparison-safe namespace consumers.</returns>
+    /// <exception cref="ConformanceReadException">The subscriptions exceed the audit's entry limit.</exception>
     internal async Task<ObservedConsumer[]> Consumers()
     {
         // Store-wide definitions are intentionally not evidence of a namespace subscription.
@@ -114,13 +124,6 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
         return [.. Bounded(records).Select(entry => new ConformanceAppend(
             Position(entry.SequenceNumber), Identity(entry.EventTypeId), entry.Occurred, ConformanceIdentities.Producer(entry.Causation)))];
     }
-
-    /// <summary>
-    /// Admits an upstream identifier under the audit's length and character limits.
-    /// </summary>
-    /// <param name="value">The upstream identifier.</param>
-    /// <returns>The same identifier if valid.</returns>
-    internal static string Identity(string value) => ConformanceScope.Identifier(value) ? value : throw new ConformanceReadException(ConformanceReadException.Failed);
 
     static long Position(ulong value) => value <= long.MaxValue ? (long)value : throw new ConformanceReadException(ConformanceReadException.Failed);
 
