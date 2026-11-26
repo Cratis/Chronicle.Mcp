@@ -9,33 +9,58 @@ using Cratis.Screenplay.Semantics;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 
+/// <summary>
+/// Maps Chronicle producer and consumer identities to Screenplay observations.
+/// </summary>
 internal static class ConformanceIdentities
 {
     static readonly char[] _reactorSeparators = ['.', '+'];
 
+    /// <summary>
+    /// Finds the last recognized producer in an append's causation chain.
+    /// </summary>
+    /// <param name="chain">The recorded causation chain.</param>
+    /// <returns>The attributable producer, if present.</returns>
     internal static ObservedProducer? Producer(IEnumerable<Causation>? chain) =>
         (chain ?? []).Select(Recognize).LastOrDefault(producer => producer is not null);
 
-    internal static ObservedConsumer Consumer(ObserverInformation observer, ImmutableArray<ObservedEventType> subscriptions) => new(
-        ConformanceObservations.Identity(observer.Id),
-        observer.Type switch
+    /// <summary>
+    /// Projects the observer identity and its subscription into comparison evidence.
+    /// </summary>
+    /// <param name="observer">The namespace observer descriptor.</param>
+    /// <param name="subscriptions">The observer's event types and generations.</param>
+    /// <returns>The comparison-safe consumer.</returns>
+    internal static ObservedConsumer Consumer(ObserverInformation observer, ImmutableArray<ObservedEventType> subscriptions)
+    {
+        var kind = observer.Type switch
         {
             ObserverType.Reactor => ObservedConsumerKind.Reaction,
             ObserverType.Projection => ObservedConsumerKind.Projection,
             ObserverType.Reducer => ObservedConsumerKind.Reducer,
             _ => ObservedConsumerKind.Other
-        },
-        observer.Owner switch
+        };
+        var owner = observer.Owner switch
         {
             ObserverOwner.Client => ObservedConsumerOwner.Application,
             ObserverOwner.Kernel => ObservedConsumerOwner.Platform,
             _ => ObservedConsumerOwner.Unknown
-        },
-        ConformanceObservations.Identity(observer.EventSequenceId),
-        subscriptions,
-        Progress(observer.NextEventSequenceNumber),
-        Progress(observer.LastHandledEventSequenceNumber));
+        };
+        return new(
+            ConformanceObservations.Identity(observer.Id),
+            kind,
+            owner,
+            ConformanceObservations.Identity(observer.EventSequenceId),
+            subscriptions,
+            Progress(observer.NextEventSequenceNumber),
+            Progress(observer.LastHandledEventSequenceNumber));
+    }
 
+    /// <summary>
+    /// Adds uniquely matched application reactors to the model's default identity map.
+    /// </summary>
+    /// <param name="model">The compiled Screenplay model.</param>
+    /// <param name="consumers">The observed namespace consumers.</param>
+    /// <returns>The identities used for comparison.</returns>
     internal static ObservationIdentityMap Map(ExecutableSemanticModel model, IEnumerable<ObservedConsumer> consumers)
     {
         var map = ObservationIdentityMap.FromModel(model);

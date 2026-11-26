@@ -34,15 +34,15 @@ public static class ChronicleMcpServiceCollectionExtensions
     {
         services.AddSingleton<ChronicleConnectionConfiguration>();
         services.AddSingleton<ICorrelationIdAccessor, CorrelationIdAccessor>();
-        services.AddSingleton(sp => CreateConnection(sp, maxReceiveMessageSize: null));
+        services.AddSingleton<IChronicleConnection>(sp => CreateConnection(sp, maxReceiveMessageSize: null));
         services.AddSingleton(sp => ((IChronicleServicesAccessor)sp.GetRequiredService<IChronicleConnection>()).Services);
-        services.AddKeyedSingleton(ConformanceConnection.Key, (sp, _) => CreateConnection(sp, ConformanceConnection.MaxReceiveBytes));
+        services.AddKeyedSingleton<IChronicleConnection>(ConformanceConnection.Key, (sp, _) => CreateConnection(sp, ConformanceConnection.MaxReceiveBytes));
         services.AddSingleton(_ => new ConformanceConnection());
 
         return services.AddCratisChronicleServices();
     }
 
-    static IChronicleConnection CreateConnection(IServiceProvider serviceProvider, int? maxReceiveMessageSize)
+    static ChronicleConnection CreateConnection(IServiceProvider serviceProvider, int? maxReceiveMessageSize)
     {
         var configuration = serviceProvider.GetRequiredService<ChronicleConnectionConfiguration>();
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();

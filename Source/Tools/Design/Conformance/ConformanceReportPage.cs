@@ -11,20 +11,43 @@ using ModelContextProtocol.Protocol;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 
+/// <summary>
+/// Adapts the canonical report to a bounded MCP tool result.
+/// </summary>
 internal static class ConformanceReportPage
 {
     const int MaxResultBytes = 64 * 1024;
     const int TransportOverheadReserve = 256;
     const int MaxSliceItems = 512;
 
+    /// <summary>
+    /// Creates an error that exposes only the operation and a stable code.
+    /// </summary>
+    /// <param name="code">The stable error code.</param>
+    /// <returns>The sanitized error.</returns>
     internal static CallToolResult Error(string code) => DenialEnvelope.Create(code, ScreenplayConformanceTools.Name);
 
-    internal static CallToolResult InvalidModel(IEnumerable<Diagnostic> diagnostics) => Result(JsonSerializer.SerializeToElement(new
+    /// <summary>
+    /// Creates an invalid-model error without echoing compiler diagnostic messages.
+    /// </summary>
+    /// <param name="diagnostics">The compiler diagnostics.</param>
+    /// <returns>The sanitized error and bounded diagnostic locations.</returns>
+    internal static CallToolResult InvalidModel(IEnumerable<Diagnostic> diagnostics)
     {
-        error = new { code = "conformance_invalid_model", operation = ScreenplayConformanceTools.Name },
-        diagnostics = diagnostics.Take(32).Select(item => new { code = item.Code, path = "application.play", line = item.Location.Line, column = item.Location.Column })
-    }), isError: true);
+        var body = JsonSerializer.SerializeToElement(new
+        {
+            error = new { code = "conformance_invalid_model", operation = ScreenplayConformanceTools.Name },
+            diagnostics = diagnostics.Take(32).Select(item => new { code = item.Code, path = "application.play", line = item.Location.Line, column = item.Location.Column })
+        });
+        return Result(body, isError: true);
+    }
 
+    /// <summary>
+    /// Preserves coverage and returns as many whole findings and slices as fit.
+    /// </summary>
+    /// <param name="report">The canonical observation comparison report.</param>
+    /// <param name="snapshot">The source of the scan continuation, if any.</param>
+    /// <returns>The bounded result, or a refusal if the summary exceeds the budget.</returns>
     internal static CallToolResult Create(ObservationReport report, ConformanceSnapshot snapshot)
     {
         var body = Canonical(report with { Findings = [], Slices = [] });
@@ -38,7 +61,12 @@ internal static class ConformanceReportPage
         });
         if (!Fits(body, report, 0, 0)) return Error("conformance_result_limit");
 
-        var findings = AddPrefix(body, report, "findings", report.Findings.Length, 0,
+        var findings = AddPrefix(
+            body,
+            report,
+            "findings",
+            report.Findings.Length,
+            0,
             index => Canonical(report with { Findings = [report.Findings[index]], Slices = [] })["findings"]![0]);
         var slices = AddPrefix(body, report, "slices", report.Slices.Length, findings, index => Slice(report, index));
         SetCounts(body, report, findings, slices);
@@ -48,6 +76,7 @@ internal static class ConformanceReportPage
     static JsonNode? Slice(ObservationReport report, int index)
     {
         var slice = report.Slices[index];
+
         // A single coherent slice may be too large to send. Refuse it before canonical serialization
         // if its nested records alone cannot reasonably fit the result budget.
         var items = slice.Events.Sum(item => 1L + item.GenerationCounts.Length) +

@@ -11,6 +11,9 @@ using Cratis.Screenplay.Workspaces;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 
+/// <summary>
+/// Admits and compiles one self-contained inline model without file discovery.
+/// </summary>
 internal static class ConformanceModelSources
 {
     const string LogicalPath = "application.play";
@@ -20,6 +23,11 @@ internal static class ConformanceModelSources
     const int MaxIndent = 128;
     static readonly UTF8Encoding _utf8 = new(false, true);
 
+    /// <summary>
+    /// Checks the source byte, line, and indentation limits before parsing.
+    /// </summary>
+    /// <param name="source">The inline document.</param>
+    /// <returns>Whether the source meets the audit limits.</returns>
     internal static bool Admit(string? source)
     {
         if (string.IsNullOrWhiteSpace(source)) return false;
@@ -35,6 +43,13 @@ internal static class ConformanceModelSources
         return true;
     }
 
+    /// <summary>
+    /// Compiles the inline document under the CLI's comparison identity convention.
+    /// </summary>
+    /// <param name="source">The admitted inline source.</param>
+    /// <param name="applicationName">The optional explicit application name.</param>
+    /// <param name="fallback">The configured name used when the model declares no domain.</param>
+    /// <returns>The compiled model if valid, and any compiler diagnostics.</returns>
     internal static (SemanticCompilation? Model, IEnumerable<Diagnostic> Diagnostics) Compile(string source, string? applicationName, string fallback)
     {
         var syntax = new ScreenplayCompiler().Parse(source, LogicalPath);
@@ -45,6 +60,7 @@ internal static class ConformanceModelSources
         if (!ConformanceScope.Identifier(name)) return (null, []);
         var identity = ApplicationIdentity.Create(name);
         var path = PortablePlayPath.Parse(LogicalPath);
+
         // Keep the same stable document identity as the CLI's ComparisonInput.
         var key = $"file-{Convert.ToHexStringLower(SHA256.HashData(_utf8.GetBytes(path.Value)))}";
         var document = WorkspaceDocument.Create(key, path, _utf8.GetBytes(source));

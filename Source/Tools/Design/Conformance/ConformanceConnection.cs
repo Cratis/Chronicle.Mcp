@@ -12,15 +12,34 @@ namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 /// </summary>
 public sealed class ConformanceConnection
 {
+    /// <summary>
+    /// The service key for the dedicated Chronicle connection.
+    /// </summary>
     internal const string Key = "screenplay-conformance";
+
+    /// <summary>
+    /// The maximum size of a received gRPC message.
+    /// </summary>
     internal const int MaxReceiveBytes = 64 * 1024;
 
     int _busy;
 
+    /// <summary>
+    /// Resolves the dedicated connection only when the audit needs to read.
+    /// </summary>
+    /// <param name="services">The deployment's service provider.</param>
+    /// <returns>The Chronicle services on the bounded channel.</returns>
     internal static IServices Resolve(IServiceProvider services) =>
         ((IChronicleServicesAccessor)services.GetRequiredKeyedService<IChronicleConnection>(Key)).Services;
 
+    /// <summary>
+    /// Attempts to acquire the single audit slot without waiting.
+    /// </summary>
+    /// <returns>Whether the slot was acquired.</returns>
     internal bool TryEnter() => Interlocked.CompareExchange(ref _busy, 1, 0) == 0;
 
+    /// <summary>
+    /// Releases the audit slot.
+    /// </summary>
     internal void Exit() => Volatile.Write(ref _busy, 0);
 }

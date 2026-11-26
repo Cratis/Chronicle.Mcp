@@ -5,4 +5,11 @@ using Cratis.Screenplay.Observations;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 
+/// <summary>
+/// The allowlisted facts about one observed append.
+/// </summary>
+/// <param name="Position">Position in the audited sequence.</param>
+/// <param name="TypeId">The event type identifier.</param>
+/// <param name="Occurred">The occurrence time used for filtering.</param>
+/// <param name="Producer">The recognized producer, if any.</param>
 internal sealed record ConformanceAppend(long Position, string TypeId, DateTimeOffset Occurred, ObservedProducer? Producer);

@@ -11,11 +11,21 @@ using ProtoBuf.Grpc;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 
+/// <summary>
+/// Reads the registry, namespace subscriptions, and allowlisted append metadata.
+/// </summary>
+/// <param name="services">The bounded Chronicle services.</param>
+/// <param name="scope">The exact target and audit bounds.</param>
+/// <param name="context">The call deadline and cancellation context.</param>
 internal sealed class ConformanceObservations(IServices services, ConformanceScope scope, CallContext context)
 {
     const int MaximumEntries = 4096;
     const ulong FirstSentinel = ulong.MaxValue - 2;
 
+    /// <summary>
+    /// Checks that all three parts of the target exist with exact casing.
+    /// </summary>
+    /// <returns>A task that completes when the target is confirmed.</returns>
     internal async Task CheckTarget()
     {
         var stores = Data(await services.EventStores.AllEventStores(context));
@@ -26,17 +36,26 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
         Require(sequences, sequence => sequence.Id, scope.Sequence);
     }
 
+    /// <summary>
+    /// Captures the current tail of the exact sequence.
+    /// </summary>
+    /// <returns>The tail, or no position for an empty sequence.</returns>
     internal async Task<long?> Tail()
     {
-        var result = Data(await services.Sequences.TailSequenceNumber(new()
+        var request = new TailSequenceNumberRequest
         {
             EventStore = scope.EventStore,
             Namespace = scope.Namespace,
             EventSequenceId = scope.Sequence
-        }, context));
+        };
+        var result = Data(await services.Sequences.TailSequenceNumber(request, context));
         return result.SequenceNumber >= FirstSentinel ? null : Position(result.SequenceNumber);
     }
 
+    /// <summary>
+    /// Reads registered event types and expands their known generations.
+    /// </summary>
+    /// <returns>The distinct registered identities and generations.</returns>
     internal async Task<ObservedEventType[]> Registrations()
     {
         var entries = Bounded(Data(await services.EventTypes.AllEventTypes(new() { EventStore = scope.EventStore }, context)));
@@ -54,6 +73,10 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
         return [.. types];
     }
 
+    /// <summary>
+    /// Reads subscriptions from actual namespace observer registrations.
+    /// </summary>
+    /// <returns>The comparison-safe namespace consumers.</returns>
     internal async Task<ObservedConsumer[]> Consumers()
     {
         // Store-wide definitions are intentionally not evidence of a namespace subscription.
@@ -72,6 +95,12 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
         return [.. consumers];
     }
 
+    /// <summary>
+    /// Requests one page of positions without reading event bodies.
+    /// </summary>
+    /// <param name="from">The first requested position.</param>
+    /// <param name="count">The number of positions to request.</param>
+    /// <returns>Allowlisted facts about the returned positions.</returns>
     internal async Task<ConformanceAppend[]> Metadata(long from, int count)
     {
         var request = new MetadataAtRequest
@@ -86,9 +115,14 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
             Position(entry.SequenceNumber), Identity(entry.EventTypeId), entry.Occurred, ConformanceIdentities.Producer(entry.Causation)))];
     }
 
+    /// <summary>
+    /// Admits an upstream identifier under the audit's length and character limits.
+    /// </summary>
+    /// <param name="value">The upstream identifier.</param>
+    /// <returns>The same identifier if valid.</returns>
     internal static string Identity(string value) => ConformanceScope.Identifier(value) ? value : throw new ConformanceReadException(ConformanceReadException.Failed);
 
-    internal static long Position(ulong value) => value <= long.MaxValue ? (long)value : throw new ConformanceReadException(ConformanceReadException.Failed);
+    static long Position(ulong value) => value <= long.MaxValue ? (long)value : throw new ConformanceReadException(ConformanceReadException.Failed);
 
     static T Data<T>(QueryResult<T> result)
     {

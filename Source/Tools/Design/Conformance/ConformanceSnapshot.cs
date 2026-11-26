@@ -5,11 +5,25 @@ using Cratis.Screenplay.Observations;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 
+/// <summary>
+/// Captured evidence together with the remaining positions, if the scan was capped.
+/// </summary>
+/// <param name="Evidence">The bounded observation snapshot.</param>
+/// <param name="NextFrom">The next range's inclusive starting position, if any.</param>
+/// <param name="NextTo">The next range's inclusive ending position, if any.</param>
 internal sealed record ConformanceSnapshot(ObservationSnapshot Evidence, long? NextFrom, long? NextTo)
 {
     const int PageSize = 500;
     const int ScanLimit = 4 * PageSize;
 
+    /// <summary>
+    /// Captures target, registry, subscription, and append evidence for a bounded range.
+    /// </summary>
+    /// <param name="reads">The Chronicle metadata reader.</param>
+    /// <param name="scope">The validated target and bounds.</param>
+    /// <param name="clock">The clock used to timestamp evidence.</param>
+    /// <param name="cancellationToken">The scan cancellation token.</param>
+    /// <returns>The evidence and any remaining range.</returns>
     internal static async Task<ConformanceSnapshot> Capture(ConformanceObservations reads, ConformanceScope scope, TimeProvider clock, CancellationToken cancellationToken)
     {
         await reads.CheckTarget();
@@ -17,17 +31,31 @@ internal sealed record ConformanceSnapshot(ObservationSnapshot Evidence, long? N
         var capturedAt = clock.GetUtcNow();
         var registered = await reads.Registrations();
         var consumers = await reads.Consumers();
-        var end = Math.Min(scope.To, tail ?? -1);
-        var count = end < scope.From ? 0 : (int)Math.Min(ScanLimit - 1, end - scope.From) + 1;
+        var start = scope.Positions.From;
+        var end = Math.Min(scope.Positions.To, tail ?? -1);
+        var count = end < start ? 0 : (int)Math.Min(ScanLimit - 1, end - start) + 1;
         var records = await ReadPositions(reads, scope, count, cancellationToken);
-        var last = count == 0 ? (long?)null : scope.From + (count - 1);
-        var coverage = new ObservedSequenceCoverage(scope.Sequence, tail is null || scope.From == 0,
-            count == 0 ? null : scope.From, last, tail, [.. Gaps(records, scope.From)], scope.OccurredFrom, scope.OccurredTo);
+        var last = count == 0 ? (long?)null : start + (count - 1);
+        var coverage = new ObservedSequenceCoverage(
+            scope.Sequence,
+            tail is null || start == 0,
+            count == 0 ? null : start,
+            last,
+            tail,
+            [.. Gaps(records, start)],
+            scope.Window.From,
+            scope.Window.To);
         var groups = GroupAppends(registered, records).ToArray();
-        var snapshot = ObservationSnapshot.Create(scope.EventStore, scope.Namespace, coverage, registered,
+        var snapshot = ObservationSnapshot.Create(
+            scope.EventStore,
+            scope.Namespace,
+            coverage,
+            registered,
             groups.GroupBy(group => group.Key.Type).Select(group => new ObservedAppend(group.Key, group.Sum(items => items.LongCount()))),
             groups.Where(group => group.Key.Producer is not null).Select(group => new ObservedEdge(group.Key.Producer!, group.Key.Type, group.LongCount())),
-            groups.Where(group => group.Key.Producer is null).Select(group => new UnattributedAppend(group.Key.Type, group.LongCount())), consumers, capturedAt);
+            groups.Where(group => group.Key.Producer is null).Select(group => new UnattributedAppend(group.Key.Type, group.LongCount())),
+            consumers,
+            capturedAt);
         return last is { } limit && limit < end ? new(snapshot, limit + 1, end) : new(snapshot, null, null);
     }
 
@@ -37,7 +65,7 @@ internal sealed record ConformanceSnapshot(ObservationSnapshot Evidence, long? N
         for (var offset = 0; offset < count; offset += PageSize)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var start = scope.From + offset;
+            var start = scope.Positions.From + offset;
             var size = Math.Min(PageSize, count - offset);
             var page = await reads.Metadata(start, size);
             RecordPage(positions, page, start, offset, size);

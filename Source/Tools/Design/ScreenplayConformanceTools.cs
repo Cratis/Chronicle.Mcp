@@ -25,6 +25,9 @@ namespace Cratis.Chronicle.Mcp.Tools.Design;
 [McpServerToolType]
 public sealed class ScreenplayConformanceTools(IServiceProvider services, ConformanceConnection connection, ChronicleConnectionConfiguration configuration, TimeProvider clock)
 {
+    /// <summary>
+    /// The registered MCP operation name.
+    /// </summary>
     internal const string Name = "audit_screenplay_conformance";
     static readonly TimeSpan _scanTimeout = TimeSpan.FromSeconds(10);
 
