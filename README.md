@@ -147,6 +147,7 @@ store's real schema. See the [Documentation](./Documentation/index.md) folder fo
 | `get_patterns` | Get learned behavior patterns matching a grouping key and current facet values, in the server's ranking order. |
 | `get_events` | Read events from an event sequence, with optional filtering. |
 | `get_tail_sequence_number` | Get the highest used sequence number (tail) in an event sequence. |
+| `list_identities` | List the identities known to an event store (bounded result size). |
 | `list_recommendations` | List active maintenance recommendations. |
 | `get_server_version` | Get version info from the server (also a connectivity check). |
 | `list_jobs` | List all jobs in a namespace, optionally filtered by job status. |
