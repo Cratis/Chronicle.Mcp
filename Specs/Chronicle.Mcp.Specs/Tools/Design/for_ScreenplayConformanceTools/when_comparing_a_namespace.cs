@@ -28,12 +28,16 @@ public class when_comparing_a_namespace : a_namespace_audit
         var compilation = ComparedModel.WithoutIdentities(workspace).Workspace.Compilation.Value!;
         var registered = new ObservedEventType("Registered", 2);
         var legacy = new ObservedEventType("Legacy", 1);
-        var snapshot = ObservationSnapshot.Create(Store, Namespace, new(Sequence, true, 0, 2, 2, []),
+        var snapshot = ObservationSnapshot.Create(
+            Store,
+            Namespace,
+            new(Sequence, true, 0, 2, 2, []),
             [new("Registered", 1), registered, new("RegisteredOnly", 1)],
             [new(registered, 2), new(legacy, 1)],
             [new(new(ObservedProducerKind.Command, "Register"), registered, 1)],
             [new(registered, 1), new(legacy, 1)],
-            [new("Elsewhere", ObservedConsumerKind.Reaction, ObservedConsumerOwner.Application, "other-log", [registered], 0, 0)], Now);
+            [new("Elsewhere", ObservedConsumerKind.Reaction, ObservedConsumerOwner.Application, "other-log", [registered], 0, 0)],
+            Now);
         var expected = JsonNode.Parse(ObservationReportJson.Serialize(ObservationComparison.Compare(compilation, snapshot)));
         var actual = JsonNode.Parse(Body.GetRawText())!.AsObject();
         foreach (var key in new[] { "scanCapped", "reportTruncated", "omittedFindings", "omittedSlices", "conventions" }) actual.Remove(key);
@@ -56,7 +60,7 @@ public class when_comparing_a_namespace : a_namespace_audit
     {
         var wire = JsonSerializer.Serialize(_result, McpJsonUtilities.ProtocolOptions);
         wire.Contains("private-", StringComparison.Ordinal).ShouldBeFalse();
-        wire.Contains("233e8fb4-4505-4235-87c0-3e96116c92b9", StringComparison.Ordinal).ShouldBeFalse();
+        wire.Contains(_correlationId.ToString(), StringComparison.Ordinal).ShouldBeFalse();
         wire.Contains("initiatorType", StringComparison.Ordinal).ShouldBeFalse();
     }
 

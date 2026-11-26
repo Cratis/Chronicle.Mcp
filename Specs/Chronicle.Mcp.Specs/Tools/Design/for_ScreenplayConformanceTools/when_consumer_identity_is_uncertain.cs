@@ -10,20 +10,19 @@ namespace Cratis.Chronicle.Mcp.Tools.Design.for_ScreenplayConformanceTools;
 
 public class when_consumer_identity_is_uncertain : a_namespace_audit
 {
-    const string ReactionSource = """
-        module Library
-          feature Registration
-            slice Automation Follow
-              event Registered
-                name String
-              event Audited
-                name String
-              reaction Follow
-                when Registered
-                  name
-                  produces Audited
-                    name = name
-        """;
+    const string ReactionSource =
+        "module Library\n" +
+        "  feature Registration\n" +
+        "    slice Automation Follow\n" +
+        "      event Registered\n" +
+        "        name String\n" +
+        "      event Audited\n" +
+        "        name String\n" +
+        "      reaction Follow\n" +
+        "        when Registered\n" +
+        "          name\n" +
+        "          produces Audited\n" +
+        "            name = name\n";
 
     void Establish()
     {
@@ -32,24 +31,17 @@ public class when_consumer_identity_is_uncertain : a_namespace_audit
     }
 
     [Theory]
-    [InlineData("UnmappedConstruct", "event-log", ObserverOwner.Client, true)]
-    [InlineData("PlatformConsumer", "event-log", ObserverOwner.Kernel, false)]
-    public async Task should_not_guess_a_unique_application_consumer(string reason, string sequence, ObserverOwner owner, bool ambiguous)
+    [InlineData("reason", "UnmappedConstruct", "event-log", ObserverOwner.Client, true)]
+    [InlineData("reason", "PlatformConsumer", "event-log", ObserverOwner.Kernel, false)]
+    [InlineData("kind", "ConsumerOnOtherSequence", "other-log", ObserverOwner.Client, false)]
+    public async Task should_distinguish_consumers_that_do_not_prove_the_subscription(string field, string finding, string sequence, ObserverOwner owner, bool ambiguous)
     {
         ObserverInformation[] observers = ambiguous
             ? [Observer("First.Follow", sequence, owner), Observer("Second.Follow", sequence, owner)]
-            : [Observer("Platform.Follow", sequence, owner)];
+            : [Observer("App.Follow", sequence, owner)];
         _observers.GetObservers(Arg.Any<AllObserversRequest>(), Arg.Any<CallContext>()).Returns(observers);
-        await Audit();
-        Body.GetProperty("findings").EnumerateArray().Any(item => item.TryGetProperty("reason", out var value) && value.GetString() == reason).ShouldBeTrue();
-    }
-
-    [Fact]
-    public async Task should_distinguish_a_consumer_on_a_different_sequence()
-    {
-        _observers.GetObservers(Arg.Any<AllObserversRequest>(), Arg.Any<CallContext>()).Returns([Observer("App.Follow", "other-log", ObserverOwner.Client)]);
-        await Audit();
-        Body.GetProperty("findings").EnumerateArray().Any(item => item.GetProperty("kind").GetString() == "ConsumerOnOtherSequence").ShouldBeTrue();
+        await Audit(TestContext.Current.CancellationToken);
+        Body.GetProperty("findings").EnumerateArray().Any(item => item.TryGetProperty(field, out var value) && value.GetString() == finding).ShouldBeTrue();
     }
 
     static ObserverInformation Observer(string id, string sequence, ObserverOwner owner) => new()

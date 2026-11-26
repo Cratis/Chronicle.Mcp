@@ -7,8 +7,10 @@ public class when_a_conditional_production_is_not_observed : a_namespace_audit
 {
     void Establish()
     {
-        Argument("modelSource", Source.Replace("produces Registered\n          for id\n          name = name",
-            "produces when name == \"first\"\n          Registered\n            for id\n            name = name", StringComparison.Ordinal));
+        Argument("modelSource", Source.Replace(
+            "produces Registered\n          for id\n          name = name",
+            "produces when name == \"first\"\n          Registered\n            for id\n            name = name",
+            StringComparison.Ordinal));
         _metadata.Clear();
         _metadata.AddRange([Append(0, "Registered"), Append(1, "Registered"), Append(2, "Registered")]);
     }

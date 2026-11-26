@@ -4,7 +4,6 @@
 using System.Text.Json;
 using Cratis.Chronicle.Connections;
 using Cratis.Chronicle.Contracts;
-using Cratis.Chronicle.Contracts.Events;
 using Cratis.Chronicle.Contracts.EventStores;
 using Cratis.Chronicle.Contracts.EventTypes;
 using Cratis.Chronicle.Contracts.Namespaces;
@@ -20,6 +19,7 @@ using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using NSubstitute;
 using ProtoBuf.Grpc;
+using EventType = Cratis.Chronicle.Contracts.Events.EventType;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design.for_ScreenplayConformanceTools;
 
@@ -30,6 +30,7 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
     protected const string Sequence = "event-log";
     protected const string Operation = "audit_screenplay_conformance";
     protected const string Source = "domain Library\nmodule Library\n  feature Registration\n    slice StateChange Register\n      command Register\n        id Uuid identifier\n        name String\n        produces Registered\n          for id\n          name = name\n      event Registered\n        name String\n";
+    protected static readonly Guid _correlationId = new(0x233e8fb4, 0x4505, 0x4235, 0x87, 0xc0, 0x3e, 0x96, 0x11, 0x6c, 0x92, 0xb9);
     protected IServices _reads;
     protected IEventSequences _sequences;
     protected IObservers _observers;
@@ -68,10 +69,18 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
 
     protected async Task Audit(CancellationToken cancellationToken = default)
     {
-        var tool = McpServerTool.Create(_catalog.Find(Operation)!.Method,
-            request => ActivatorUtilities.CreateInstance<ScreenplayConformanceTools>(request.Services!), new() { Services = _provider });
-        var request = new RequestContext<CallToolRequestParams>(Substitute.For<McpServer>(), new() { Method = RequestMethods.ToolsCall },
-            new() { Name = Operation, Arguments = _arguments }) { Services = _provider, MatchedPrimitive = tool };
+        var tool = McpServerTool.Create(
+            _catalog.Find(Operation)!.Method,
+            request => ActivatorUtilities.CreateInstance<ScreenplayConformanceTools>(request.Services!),
+            new() { Services = _provider });
+        var request = new RequestContext<CallToolRequestParams>(
+            Substitute.For<McpServer>(),
+            new() { Method = RequestMethods.ToolsCall },
+            new() { Name = Operation, Arguments = _arguments })
+        {
+            Services = _provider,
+            MatchedPrimitive = tool
+        };
         var filter = new AuthorizedToolCalls(_catalog, new(_policy, _configuration, _clock), _monitor, NullLogger<AuthorizedToolCalls>.Instance);
         _result = await filter.Filter(tool.InvokeAsync)(request, cancellationToken);
     }
@@ -88,19 +97,22 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
     {
         SequenceNumber = position,
         EventTypeId = type,
-        Occurred = Now.AddMinutes((double)position),
+        Occurred = Now.AddMinutes(position),
         EventSourceId = "private-source-id",
         EventSourceName = "private-source-name",
         EventSourceType = "private-source-type",
         EventStreamId = "private-stream-id",
         EventStreamType = "private-stream-type",
-        CorrelationId = Guid.Parse("233e8fb4-4505-4235-87c0-3e96116c92b9"),
+        CorrelationId = _correlationId,
         CausedBy = new() { Subject = "private-identity", UserName = "private-username" },
         InitiatorType = Contracts.Patterns.InitiatorType.User,
         Tags = ["private-tags"],
         Subject = "private-subject",
-        Causation = [new() { Type = "private-causation", Properties = new Dictionary<string, string> { ["private-property"] = "private-value" } },
-            .. (command is null ? Array.Empty<Causation>() : [new Causation { Type = "Command", Properties = new Dictionary<string, string> { ["commandType"] = command } }])]
+        Causation =
+        [
+            new() { Type = "private-causation", Properties = new Dictionary<string, string> { ["private-property"] = "private-value" } },
+            .. command is null ? Array.Empty<Causation>() : [new Causation { Type = "Command", Properties = new Dictionary<string, string> { ["commandType"] = command } }]
+        ]
     };
 
     void SetUpTargets()

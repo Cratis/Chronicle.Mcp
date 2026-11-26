@@ -45,7 +45,7 @@ public sealed class ScreenplayConformanceTools(IServiceProvider services, Confor
     /// <param name="occurredTo">Optional exclusive UTC time filter upper bound.</param>
     /// <param name="cancellationToken">The caller's cancellation token.</param>
     /// <returns>A conformance report or a sanitized error.</returns>
-    [McpServerTool(Name = Name, ReadOnly = true)]
+    [McpServerTool(Name = Name, ReadOnly = true, OpenWorld = false)]
     [Description("Compare a self-contained inline Screenplay model with metadata from one explicit Chronicle sequence. Reports bounded evidence, not runtime correctness.")]
     public async Task<CallToolResult> AuditScreenplayConformance(
         string eventStore,

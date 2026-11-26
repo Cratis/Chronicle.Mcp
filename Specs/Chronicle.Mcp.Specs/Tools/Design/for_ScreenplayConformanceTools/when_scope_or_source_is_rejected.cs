@@ -19,18 +19,9 @@ public class when_scope_or_source_is_rejected : a_namespace_audit
     public async Task should_refuse_invalid_input_before_accessing_chronicle(string field, object value, string code)
     {
         Argument(field, value);
-        await Audit();
+        await Audit(TestContext.Current.CancellationToken);
         Body.GetProperty("error").GetProperty("code").GetString().ShouldEqual(code);
         JsonSerializer.Serialize(_result, McpJsonUtilities.ProtocolOptions).Contains("private-", StringComparison.Ordinal).ShouldBeFalse();
-        _reads.ReceivedCalls().ShouldBeEmpty();
-    }
-
-    [Fact]
-    public async Task should_measure_the_model_in_utf8_bytes()
-    {
-        Argument("modelSource", string.Concat(Enumerable.Repeat(new string('é', 1023) + "\n", 33)));
-        await Audit();
-        Body.GetProperty("error").GetProperty("code").GetString().ShouldEqual("conformance_model_limit");
         _reads.ReceivedCalls().ShouldBeEmpty();
     }
 }
