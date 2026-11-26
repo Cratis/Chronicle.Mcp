@@ -4,6 +4,7 @@
 using Cratis.Chronicle.Connections;
 using Cratis.Chronicle.Contracts;
 using Cratis.Chronicle.Mcp.Configuration;
+using Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 using Cratis.Execution;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -33,13 +34,15 @@ public static class ChronicleMcpServiceCollectionExtensions
     {
         services.AddSingleton<ChronicleConnectionConfiguration>();
         services.AddSingleton<ICorrelationIdAccessor, CorrelationIdAccessor>();
-        services.AddSingleton(CreateConnection);
+        services.AddSingleton(sp => CreateConnection(sp, maxReceiveMessageSize: null));
         services.AddSingleton(sp => ((IChronicleServicesAccessor)sp.GetRequiredService<IChronicleConnection>()).Services);
+        services.AddKeyedSingleton(ConformanceConnection.Key, (sp, _) => CreateConnection(sp, ConformanceConnection.MaxReceiveBytes));
+        services.AddSingleton(_ => new ConformanceConnection());
 
         return services.AddCratisChronicleServices();
     }
 
-    static IChronicleConnection CreateConnection(IServiceProvider serviceProvider)
+    static IChronicleConnection CreateConnection(IServiceProvider serviceProvider, int? maxReceiveMessageSize)
     {
         var configuration = serviceProvider.GetRequiredService<ChronicleConnectionConfiguration>();
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
@@ -59,7 +62,7 @@ public static class ChronicleMcpServiceCollectionExtensions
         return new ChronicleConnection(
             connectionString,
             connectTimeout: connectTimeoutSeconds,
-            maxReceiveMessageSize: null,
+            maxReceiveMessageSize: maxReceiveMessageSize,
             maxSendMessageSize: null,
             new ConnectionLifecycle(loggerFactory.CreateLogger<ConnectionLifecycle>()),
             new Tasks.TaskFactory(),
