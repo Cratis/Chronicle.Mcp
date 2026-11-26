@@ -54,9 +54,10 @@ internal static class ConformanceModelSources
     {
         var syntax = new ScreenplayCompiler().Parse(source, LogicalPath);
         if (!syntax.Success) return (null, syntax.Diagnostics);
-        if (syntax.Value!.FileImports.Any()) return (null, []);
+        var application = syntax.Value!;
+        if (application.FileImports.Any() || application.Imports.Any() || application.Systems.Any(system => system.Extension is not null)) return (null, []);
 
-        var name = applicationName ?? syntax.Value.Domain?.Name ?? fallback;
+        var name = applicationName ?? application.Domain?.Name ?? fallback;
         if (!ConformanceScope.Identifier(name)) return (null, []);
         var identity = ApplicationIdentity.Create(name);
         var path = PortablePlayPath.Parse(LogicalPath);

@@ -18,9 +18,10 @@ public sealed class ConformanceConnection
     internal const string Key = "screenplay-conformance";
 
     /// <summary>
-    /// The maximum size of a received gRPC message.
+    /// The maximum size of a unary response. Registry reads are not paged: allow an average of
+    /// 4 KiB of schema and metadata per admitted entry, subject to this hard byte limit.
     /// </summary>
-    internal const int MaxReceiveBytes = 64 * 1024;
+    internal const int MaxReceiveBytes = ConformanceObservations.MaximumEntries * 4 * 1024;
 
     int _busy;
 
@@ -28,9 +29,10 @@ public sealed class ConformanceConnection
     /// Resolves the dedicated connection only when the audit needs to read.
     /// </summary>
     /// <param name="services">The deployment's service provider.</param>
+    /// <param name="cancellationToken">The caller and scan deadline token.</param>
     /// <returns>The Chronicle services on the bounded channel.</returns>
-    internal static IServices Resolve(IServiceProvider services) =>
-        ((IChronicleServicesAccessor)services.GetRequiredKeyedService<IChronicleConnection>(Key)).Services;
+    internal static ValueTask<IServices> Resolve(IServiceProvider services, CancellationToken cancellationToken) =>
+        services.GetRequiredKeyedService<IGetServicesAsynchronously>(Key).GetServices(cancellationToken);
 
     /// <summary>
     /// Attempts to acquire the single audit slot without waiting.

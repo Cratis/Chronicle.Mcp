@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Text;
+using Cratis.Chronicle.Connections;
 using Cratis.Chronicle.Mcp.Configuration;
 using Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 using Cratis.Screenplay.Observations;
@@ -93,7 +94,8 @@ public sealed class ScreenplayConformanceTools(IServiceProvider services, Confor
         var context = new CallContext(new CallOptions(deadline: DateTime.UtcNow + _scanTimeout, cancellationToken: token));
         try
         {
-            var reads = new ConformanceObservations(ConformanceConnection.Resolve(services), scope, context);
+            var chronicle = await ConformanceConnection.Resolve(services, token);
+            var reads = new ConformanceObservations(chronicle, scope, context);
             var snapshot = await ConformanceSnapshot.Capture(reads, scope, clock, token);
             token.ThrowIfCancellationRequested();
             var identities = ConformanceIdentities.Map(compilation.Model, snapshot.Evidence.Consumers);
@@ -105,6 +107,10 @@ public sealed class ScreenplayConformanceTools(IServiceProvider services, Confor
         catch (ConformanceReadException exception)
         {
             return ConformanceReportPage.Error(exception.Message);
+        }
+        catch (ConnectionTimedOut)
+        {
+            return ConformanceReportPage.Error("conformance_timeout");
         }
         catch (InvalidObservationSnapshot)
         {

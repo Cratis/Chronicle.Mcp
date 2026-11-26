@@ -1,3 +1,8 @@
+---
+title: Audit Screenplay conformance
+description: Compare an inline Screenplay model with bounded Chronicle metadata from a single sequence.
+---
+
 # Audit Screenplay conformance
 
 Use `audit_screenplay_conformance` to compare a self-contained Screenplay model with bounded evidence from one Chronicle sequence. The tool is read-only in both deployment profiles. Chronicle authorizes every read using the deployment credential, not the MCP caller's model or mutation grants.
@@ -17,7 +22,7 @@ Supply the exact, case-sensitive event store, namespace, and sequence names, plu
 }
 ```
 
-The inline document is treated as `application.play`. Document imports, local paths, and root aliases are not supported. The source limit is 64 KiB of UTF-8, 4,096 lines, and 2,048 bytes per line; indentation is limited to 128 spaces. The optional `applicationName` sets the semantic application identity; otherwise the model domain or configured event store name is used. Target identifiers and the application name are limited to 256 characters.
+The inline document is treated as `application.play`. Document imports, external system extensions, local paths, and root aliases are not supported. The source limit is 64 KiB of UTF-8, 4,096 lines, and 2,048 bytes per line; indentation is limited to 128 spaces. The optional `applicationName` sets the semantic application identity; otherwise the model domain or configured event store name is used. Target identifiers and the application name are limited to 256 characters.
 
 Use `occurredFrom` and `occurredTo` together to filter by occurrence time (UTC, start inclusive, end exclusive, at most 24 hours). The tool still scans positions in sequence order because occurrence times need not be ordered. It reports missing positions and time exclusions as unexamined. A nonexistent sequence is an error, not empty evidence.
 
@@ -25,7 +30,11 @@ Use `occurredFrom` and `occurredTo` together to filter by occurrence time (UTC, 
 
 The untrusted result includes the captured tail, examination bounds, gaps, counts, findings, per-slice evidence, and what was not established. For example, a range that starts strictly after the first event can be partial. A modeled relationship with no attributed appends in that range can be `Unknown`: lack of evidence is not evidence that the relationship never runs. Do not interpret an absent `hasDrift` verdict as `false`.
 
-Each call examines at most 2,000 positions in four pages and uses a ten-second scan deadline. Only one audit runs at a time per server process. If `scanCapped` is true, use the returned `continuation` range with the same target, model, and filters. The next call conducts an independent comparison; it does not extend a previous proof of absence. The audit connection caps each response at 64 KiB and rejects oversized or failed reads instead of treating them as empty evidence.
+Each call examines at most 2,000 positions. Metadata requests start at up to 500 positions. If Chronicle reports that a response exceeds the receive limit, the tool halves the request at the same position and uses the smaller size for subsequent pages. The scan allows at most 256 metadata attempts within a ten-second deadline. An oversized single record or exhausted retry budget fails the audit without a partial verdict. Only one audit runs at a time per server process.
+
+The audit connection caps each unary response at 16 MiB: a budget of 4 KiB per entry across 4,096 entries, allowing room for event schemas and observer descriptors in unpaged responses. This is an average budget, not a per-entry guarantee. A larger unpaged response causes a read-limit error; narrowing the sequence range cannot shrink it.
+
+If `scanCapped` is true, use the returned `continuation` range with the same target, model, and filters. The next call conducts an independent comparison; it does not extend a previous proof of absence.
 
 `reportTruncated` and the omitted counts describe the separate 64 KiB response budget. The tool keeps the summary and coverage and returns deterministic prefixes of whole findings and slices. Narrow the range or model to request omitted detail; the scan continuation does not page through findings.
 

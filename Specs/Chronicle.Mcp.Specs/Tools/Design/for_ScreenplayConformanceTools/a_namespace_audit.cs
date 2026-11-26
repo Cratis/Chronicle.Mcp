@@ -8,7 +8,6 @@ using Cratis.Chronicle.Contracts.EventStores;
 using Cratis.Chronicle.Contracts.EventTypes;
 using Cratis.Chronicle.Contracts.Namespaces;
 using Cratis.Chronicle.Contracts.Observation;
-using Cratis.Chronicle.Contracts.Projections;
 using Cratis.Chronicle.Contracts.Queries;
 using Cratis.Chronicle.Contracts.Sequences;
 using Cratis.Chronicle.Mcp.Authorization;
@@ -32,6 +31,7 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
     protected const string Source = "domain Library\nmodule Library\n  feature Registration\n    slice StateChange Register\n      command Register\n        id Uuid identifier\n        name String\n        produces Registered\n          for id\n          name = name\n      event Registered\n        name String\n";
     protected static readonly Guid _correlationId = new(0x233e8fb4, 0x4505, 0x4235, 0x87, 0xc0, 0x3e, 0x96, 0x11, 0x6c, 0x92, 0xb9);
     protected IServices _reads;
+    protected AuditServices _auditServices;
     protected IEventSequences _sequences;
     protected IObservers _observers;
     protected IEventTypes _eventTypes;
@@ -59,10 +59,9 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
         SetUpTargets();
         SetUpRegistry();
         SetUpMetadata();
-        var connection = Substitute.For<IChronicleConnection, IChronicleServicesAccessor>();
-        ((IChronicleServicesAccessor)connection).Services.Returns(_reads);
+        _auditServices = new(_reads);
         _provider = new ServiceCollection().AddSingleton(_configuration).AddSingleton(_clock).AddSingleton<ConformanceConnection>()
-            .AddKeyedSingleton("screenplay-conformance", connection).BuildServiceProvider();
+            .AddKeyedSingleton<IGetServicesAsynchronously>("screenplay-conformance", _auditServices).BuildServiceProvider();
     }
 
     protected void Argument<T>(string name, T value) => _arguments[name] = JsonSerializer.SerializeToElement(value);
@@ -138,10 +137,6 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
         _observers = Substitute.For<IObservers>();
         _reads.EventTypes.Returns(_eventTypes);
         _reads.Observers.Returns(_observers);
-        var projections = Substitute.For<IProjections>();
-        _reads.Projections.Returns(projections);
-        projections.GetAllDefinitions(Arg.Is<GetAllDefinitionsRequest>(request => request.EventStore == Store), Arg.Any<CallContext>())
-            .Returns(Array.Empty<ProjectionDefinition>());
         _eventTypes.AllEventTypes(Arg.Is<AllEventTypesRequest>(request => request.EventStore == Store), Arg.Any<CallContext>())
             .Returns(Success<IEnumerable<EventTypeDetailsResponse>>([Event("Registered", 2), Event("RegisteredOnly")]));
         _observers.GetObservers(Arg.Is<AllObserversRequest>(request => request.EventStore == Store && request.Namespace == Namespace), Arg.Any<CallContext>())
@@ -156,4 +151,19 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
     });
 
     void Destroy() => _provider.Dispose();
+
+    protected sealed class AuditServices(IServices reads) : IGetServicesAsynchronously
+    {
+        public int Calls { get; private set; }
+
+        public Func<CancellationToken, Task> BeforeRead { get; set; } = _ => Task.CompletedTask;
+
+        public async ValueTask<IServices> GetServices(CancellationToken cancellationToken)
+        {
+            Calls++;
+            await BeforeRead(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return reads;
+        }
+    }
 }

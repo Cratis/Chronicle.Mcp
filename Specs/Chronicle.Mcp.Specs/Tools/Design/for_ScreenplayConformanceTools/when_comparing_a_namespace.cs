@@ -51,7 +51,7 @@ public class when_comparing_a_namespace : a_namespace_audit
         (page.EventStore, page.Namespace, page.EventSequenceId).ShouldEqual((Store, Namespace, Sequence));
         page.SequenceNumbers.ShouldEqual(0ul, 1ul, 2ul);
         _reads.ReceivedCalls().Select(call => call.GetMethodInfo().Name).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
-            .ShouldEqual("get_EventStores", "get_EventTypes", "get_Namespaces", "get_Observers", "get_Projections", "get_Sequences");
+            .ShouldEqual("get_EventStores", "get_EventTypes", "get_Namespaces", "get_Observers", "get_Sequences");
         _sequences.ReceivedCalls().Select(call => call.GetMethodInfo().Name).ShouldEqual("AllEventSequences", "TailSequenceNumber", "MetadataAt");
     }
 

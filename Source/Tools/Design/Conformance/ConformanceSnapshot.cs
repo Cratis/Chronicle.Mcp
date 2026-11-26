@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Cratis.Screenplay.Observations;
+using Grpc.Core;
 
 namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 
@@ -14,7 +15,8 @@ namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 internal sealed record ConformanceSnapshot(ObservationSnapshot Evidence, long? NextFrom, long? NextTo)
 {
     const int PageSize = 500;
-    const int ScanLimit = 4 * PageSize;
+    const int ScanLimit = 2000;
+    const int ReadAttemptLimit = 256;
 
     /// <summary>
     /// Captures target, registry, subscription, and append evidence for a bounded range.
@@ -62,13 +64,25 @@ internal sealed record ConformanceSnapshot(ObservationSnapshot Evidence, long? N
     static async Task<ConformanceAppend?[]> ReadPositions(ConformanceObservations reads, ConformanceScope scope, int count, CancellationToken cancellationToken)
     {
         var positions = new ConformanceAppend?[count];
-        for (var offset = 0; offset < count; offset += PageSize)
+        var pageSize = PageSize;
+        var offset = 0;
+        for (var attempt = 0; offset < count; attempt++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (attempt == ReadAttemptLimit) throw new ConformanceReadException(ConformanceReadException.Limit);
             var start = scope.Positions.From + offset;
-            var size = Math.Min(PageSize, count - offset);
-            var page = await reads.Metadata(start, size);
-            RecordPage(positions, page, start, offset, size);
+            var size = Math.Min(pageSize, count - offset);
+            try
+            {
+                var page = await reads.Metadata(start, size);
+                RecordPage(positions, page, start, offset, size);
+                offset += size;
+            }
+            catch (RpcException exception) when (exception.StatusCode == StatusCode.ResourceExhausted && size > 1)
+            {
+                // No positions were examined on failure. Retry the same start with fewer positions.
+                pageSize = size / 2;
+            }
         }
 
         return positions.Select(record => record is not null && scope.Includes(record.Occurred) ? record : null).ToArray();

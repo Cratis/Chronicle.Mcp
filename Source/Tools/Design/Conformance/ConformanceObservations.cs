@@ -5,7 +5,6 @@ using Cratis.Chronicle.Contracts;
 using Cratis.Chronicle.Contracts.Observation;
 using Cratis.Chronicle.Contracts.Queries;
 using Cratis.Chronicle.Contracts.Sequences;
-using Cratis.Chronicle.Mcp.Authorization;
 using Cratis.Screenplay.Observations;
 using ProtoBuf.Grpc;
 
@@ -19,7 +18,10 @@ namespace Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 /// <param name="context">The call deadline and cancellation context.</param>
 internal sealed class ConformanceObservations(IServices services, ConformanceScope scope, CallContext context)
 {
-    const int MaximumEntries = 4096;
+    /// <summary>
+    /// The maximum number of entries, expanded generations, or subscriptions admitted per collection.
+    /// </summary>
+    internal const int MaximumEntries = 4096;
     const ulong FirstSentinel = ulong.MaxValue - 2;
 
     /// <summary>
@@ -89,8 +91,6 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
     /// <exception cref="ConformanceReadException">The subscriptions exceed the audit's entry limit.</exception>
     internal async Task<ObservedConsumer[]> Consumers()
     {
-        // Store-wide definitions are intentionally not evidence of a namespace subscription.
-        _ = Bounded(await services.Projections.GetAllDefinitions(new() { EventStore = scope.EventStore }, context));
         var observers = Bounded(await services.Observers.GetObservers(new AllObserversRequest { EventStore = scope.EventStore, Namespace = scope.Namespace }, context));
         var consumers = new List<ObservedConsumer>();
         var subscriptions = 0;
@@ -129,7 +129,7 @@ internal sealed class ConformanceObservations(IServices services, ConformanceSco
 
     static T Data<T>(QueryResult<T> result)
     {
-        if (!result.IsAuthorized) throw new ConformanceReadException(DenialCodes.ChronicleDenied);
+        if (!result.IsAuthorized) throw new Grpc.Core.RpcException(new(Grpc.Core.StatusCode.PermissionDenied, string.Empty));
         return result.IsSuccess && result.Data is not null ? result.Data : throw new ConformanceReadException(ConformanceReadException.Failed);
     }
 
