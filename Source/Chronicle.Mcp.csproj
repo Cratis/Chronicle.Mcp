@@ -8,6 +8,7 @@
     <PackageReference Include="Cratis.Chronicle.Connections" />
     <PackageReference Include="Cratis.Chronicle.Contracts" />
     <PackageReference Include="Cratis.Fundamentals" />
+    <PackageReference Include="Cratis.Screenplay" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="ModelContextProtocol" />
   </ItemGroup>

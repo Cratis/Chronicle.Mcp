@@ -167,6 +167,7 @@ store's real schema. See the [Documentation](./Documentation/index.md) folder fo
 | `describe_event_type` | Describe an event type's real schema — every property with its JSON and suggested C# type. The grounding primitive for the others. |
 | `scaffold_read_model` | Generate a reviewable read model + model-bound projection from one or more event types, grounded in their schema. |
 | `audit_unconsumed_event_types` | Report event types nothing reads, plus consumers that reference an event type id that no longer exists. |
+| [`audit_screenplay_conformance`](Documentation/design-time/screenplay-conformance.md) | Compare a self-contained Screenplay model with bounded metadata from one Chronicle sequence. |
 | `generate_event_catalog` | Produce a living data dictionary — every event type, its fields, and its consumers. |
 | `explain_causal_trace` | Read an event source's ordered history with correlation and causation, to narrate what happened and why. |
 
