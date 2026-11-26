@@ -68,6 +68,10 @@ Mutation deployments should use dedicated least-privilege client credentials. AP
 
 Explicit API keys, embedded credentials and explicit `ClientId`/`ClientSecret` options support SRV, multi-host and load-balancer connections. OAuth connections on those topologies bypass the disk token cache, rather than treating a topology-wide key as proof of the issuing server. Fixed destinations retain destination-bound disk caching. Implicit CLI and development credentials require one fixed destination.
 
+## Screenplay audit
+
+[`audit_screenplay_conformance`](design-time/screenplay-conformance.md) uses a separate, size-limited Chronicle connection with the same configured destination and credentials. The audit connection skips the session handshake and keeps OAuth tokens in memory instead of using the shared disk cache. It adds no configuration keys and accepts only an inline model; it never opens model files or resolves external model references. Other tools keep their existing connection and cache behavior.
+
 ## Migrating existing configuration
 
 **Changed / Security:** Mutation now rejects well-known development credentials unless explicitly opted in with `Cratis__Chronicle__Mcp__Authorization__AllowDevelopmentCredentials=true`. `UseDevelopmentCredentials=true` alone no longer suffices for Mutation. Keep this exception isolated to local development. Existing valid legacy mutation policies keep working with a deprecation warning; replacing them with an allowlist deliberately removes their target and revocation restrictions. Offset-less policy expiration timestamps must be replaced with an explicit offset or `Z`.
