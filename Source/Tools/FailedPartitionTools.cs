@@ -117,9 +117,6 @@ public static class FailedPartitionTools
     static async Task<FailedPartition?> FindFailure(IServices services, GetFailedPartitionsRequest scope, Guid id) =>
         (await services.FailedPartitions.GetFailedPartitions(scope)).SingleOrDefault(failure => failure.Id == id);
 
-    static FailedPartitionAttempt? LatestAttempt(FailedPartition failure) =>
-        (failure.Attempts ?? []).OrderBy(attempt => (DateTimeOffset?)attempt.Occurred).LastOrDefault();
-
     static async Task<string?> ObservedSequence(IServices services, GetFailedPartitionsRequest scope, string observerId)
     {
         var observers = await services.Observers.GetObservers(new AllObserversRequest

@@ -99,6 +99,49 @@ internal static class FailedPartitionExplanationFormatting
         };
     }
 
+    /// <summary>
+    /// Selects the last recorded attempt at the latest occurrence time.
+    /// </summary>
+    /// <param name="failure">The failure containing the attempts.</param>
+    /// <returns>The latest attempt, or null when none were recorded.</returns>
+    internal static FailedPartitionAttempt? LatestAttempt(FailedPartition failure) =>
+        (failure.Attempts ?? []).OrderBy(attempt => (DateTimeOffset?)attempt.Occurred).LastOrDefault();
+
+    /// <summary>
+    /// Projects the retained diagnostic fields, allowing a caller to withhold text before clipping.
+    /// </summary>
+    /// <param name="attempt">The attempt to project.</param>
+    /// <param name="screen">An optional screen applied to original retained text.</param>
+    /// <returns>The bounded attempt description with limits reported against the source text.</returns>
+    internal static FailedPartitionAttemptExplanation DescribeAttempt(FailedPartitionAttempt attempt, Func<string, string>? screen = null)
+    {
+        var messages = (attempt.Messages ?? []).Take(MaxMessages + 1).ToArray();
+        var retained = messages.Take(MaxMessages).ToArray();
+        return new(
+            attempt.Kind.ToString(),
+            attempt.Occurred,
+            attempt.SequenceNumber,
+            retained.Select(message => Shorten(screen?.Invoke(message) ?? message, MaxMessageLength)).ToArray(),
+            attempt.StackTrace is { } stack ? Shorten(screen?.Invoke(stack) ?? stack, MaxStackLength) : null,
+            messages.Length > MaxMessages,
+            retained.Any(message => message.Length > MaxMessageLength),
+            attempt.StackTrace?.Length > MaxStackLength);
+    }
+
+    /// <summary>
+    /// Tests whether any identifier exceeds the display budget.
+    /// </summary>
+    /// <param name="values">The identifiers to check.</param>
+    /// <returns>Whether at least one identifier would be shortened.</returns>
+    internal static bool IdentifiersTooLong(params string[] values) => values.Any(value => value.Length > MaxIdentifierLength);
+
+    /// <summary>
+    /// Shortens an identifier for display only.
+    /// </summary>
+    /// <param name="value">The full identifier.</param>
+    /// <returns>The bounded identifier.</returns>
+    internal static string Display(string value) => Shorten(value, MaxIdentifierLength);
+
     static bool HasInvalidPositions(AppendedEventResponse[] rows, ulong position) =>
         rows.Any(row => row.Context.SequenceNumber > position) || rows.DistinctBy(row => row.Context.SequenceNumber).Count() != rows.Length;
 
@@ -118,31 +161,12 @@ internal static class FailedPartitionExplanationFormatting
             IdentifiersTooLong(header.EventType.Id, header.EventSourceId));
     }
 
-    static FailedPartitionAttemptExplanation DescribeAttempt(FailedPartitionAttempt attempt)
-    {
-        var messages = (attempt.Messages ?? []).Take(MaxMessages + 1).ToArray();
-        var retained = messages.Take(MaxMessages).ToArray();
-        return new(
-            attempt.Kind.ToString(),
-            attempt.Occurred,
-            attempt.SequenceNumber,
-            retained.Select(message => Shorten(message, MaxMessageLength)).ToArray(),
-            attempt.StackTrace is { } stack ? Shorten(stack, MaxStackLength) : null,
-            messages.Length > MaxMessages,
-            retained.Any(message => message.Length > MaxMessageLength),
-            attempt.StackTrace?.Length > MaxStackLength);
-    }
-
     static string GetContentStatus(AppendedEventResponse row)
     {
         if (row.ErasedProperties?.Any() is true) return "redacted";
         if (string.IsNullOrEmpty(row.Content)) return "unavailable";
         return row.Content.Length > MaxContentLength ? "budget_exceeded" : "present";
     }
-
-    static bool IdentifiersTooLong(params string[] values) => values.Any(value => value.Length > MaxIdentifierLength);
-
-    static string Display(string value) => Shorten(value, MaxIdentifierLength);
 
     static string Shorten(string value, int limit)
     {
