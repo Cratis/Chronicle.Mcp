@@ -42,6 +42,7 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
     protected ServiceProvider _provider;
     protected Configuration.McpServerOptions _options;
     protected CallToolResult _result;
+    protected Action? _onCatalogCreated;
 
     protected JsonElement Body => _result.StructuredContent!.Value.GetProperty("untrustedData").GetProperty("content");
 
@@ -65,6 +66,12 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
         _options = new();
         var services = new ServiceCollection().AddSingleton(_configuration).AddSingleton(_clock).AddSingleton<ConformanceConnection>()
             .AddSingleton(Options.Create(_options)).AddKeyedSingleton<IGetServicesAsynchronously>("screenplay-conformance", _auditServices);
+        services.AddSingleton(provider =>
+        {
+            var catalog = ActivatorUtilities.CreateInstance<ConformanceModelCatalog>(provider);
+            _onCatalogCreated?.Invoke();
+            return catalog;
+        });
         CatalogStartup.Register(services);
         _provider = services.BuildServiceProvider();
     }

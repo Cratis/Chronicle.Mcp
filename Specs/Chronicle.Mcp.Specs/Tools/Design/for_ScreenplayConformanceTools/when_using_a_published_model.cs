@@ -56,10 +56,15 @@ public class when_using_a_published_model : a_published_model_audit
     async Task should_release_the_admission_slot_after_cancellation()
     {
         Write(Entry, Source);
-        await Audit(new CancellationToken(canceled: true));
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Cancellation);
+
+        // The tool resolves the catalog after admission; its first document read observes cancellation.
+        _onCatalogCreated = cancellation.Cancel;
+        await Audit(cancellation.Token);
         AssertRefusal("conformance_cancelled");
 
         await Audit(Cancellation);
         _result.IsError.ShouldNotEqual(true);
+        _auditServices.Calls.ShouldEqual(1);
     }
 }
