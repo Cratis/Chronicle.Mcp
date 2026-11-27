@@ -13,6 +13,7 @@ internal sealed partial class DiagnosticTextScreen
 {
     /// <summary>
     /// Normalized suffixes. Shorter suffixes also cover clientsecret, sharedaccesskey, and setcookie.
+    /// Authorization assignments deliberately fail closed, even for harmless values such as denied.
     /// </summary>
     static readonly string[] _credentialKeySuffixes =
     [
@@ -25,7 +26,7 @@ internal sealed partial class DiagnosticTextScreen
     /// </summary>
     internal bool DiagnosticsRedacted { get; private set; }
 
-    [GeneratedRegex("""(?<key>[A-Za-z0-9_.-]+)(?:\\?["'])?\s*[:=]""", RegexOptions.NonBacktracking)]
+    [GeneratedRegex("""(?<key>(?:[A-Za-z0-9_.-]+ +)?[A-Za-z0-9_.-]+)(?:\\?["'])?\s*[:=]""", RegexOptions.NonBacktracking)]
     private static partial Regex CandidateAssignment { get; }
 
     [GeneratedRegex(
