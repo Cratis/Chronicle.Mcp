@@ -1,8 +1,8 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Text.RegularExpressions;
 using Cratis.Chronicle.Contracts.Observation;
+using static Cratis.Chronicle.Mcp.Tools.FailedPartitionAttempts;
 using static Cratis.Chronicle.Mcp.Tools.FailedPartitionExplanationFormatting;
 
 namespace Cratis.Chronicle.Mcp.Tools;
@@ -10,15 +10,10 @@ namespace Cratis.Chronicle.Mcp.Tools;
 /// <summary>
 /// Projects observer facts and bounded failure evidence without inferring progress.
 /// </summary>
-internal static partial class ObserverDiagnosisFormatting
+internal static class ObserverDiagnosisFormatting
 {
     const int FailureLimit = 5;
     const ulong FirstNonPosition = ulong.MaxValue - 2;
-
-    [GeneratedRegex(
-        """\b(?:authorization["']?\s*[:=]|bearer\s+|(?:password|token|access_token|refresh_token)["']?\s*[:=])|-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----""",
-        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex CredentialMarker { get; }
 
     /// <summary>Creates the base diagnosis for the selected scope.</summary>
     /// <param name="scope">The resolved event store and namespace.</param>
@@ -106,17 +101,10 @@ internal static partial class ObserverDiagnosisFormatting
 
     static ObserverFailureEvidence DescribeFailure(FailedPartition failure)
     {
-        var redacted = false;
+        var screen = new DiagnosticTextScreen();
         var attempt = LatestAttempt(failure);
-        var evidence = attempt is null ? null : DescribeAttempt(attempt, Screen);
-        return new(failure.Id, Display(failure.Partition ?? string.Empty), failure.IsQuarantined, attempt is null ? "no_attempt" : "recorded", evidence, redacted);
-
-        string Screen(string text)
-        {
-            if (!CredentialMarker.IsMatch(text)) return text;
-            redacted = true;
-            return "[withheld]";
-        }
+        var evidence = attempt is null ? null : DescribeAttempt(attempt, screen);
+        return new(failure.Id, Display(failure.Partition ?? string.Empty), failure.IsQuarantined, attempt is null ? "no_attempt" : "recorded", evidence, screen.DiagnosticsRedacted);
     }
 
     static bool? Quarantine(ObserverRunningState state) => state switch

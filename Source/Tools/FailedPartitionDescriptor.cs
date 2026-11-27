@@ -20,4 +20,10 @@ public record FailedPartitionDescriptor(
     int Attempts,
     ulong? LastFailedSequenceNumber,
     string? LastFailureReason,
-    DateTimeOffset? LastOccurred);
+    DateTimeOffset? LastOccurred)
+{
+    /// <summary>
+    /// Gets whether the credential screen withheld diagnostics from the latest attempt.
+    /// </summary>
+    public bool DiagnosticsRedacted { get; init; }
+}
