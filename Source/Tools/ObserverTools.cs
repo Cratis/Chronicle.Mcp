@@ -18,6 +18,39 @@ public static class ObserverTools
     const int QuarantinedRunningStateValue = 5;
 
     /// <summary>
+    /// Reads an observer's reported state, positions, and unresolved failure evidence without starting recovery.
+    /// </summary>
+    /// <param name="services">The authenticated Chronicle services.</param>
+    /// <param name="configuration">The connection configuration used to resolve defaults.</param>
+    /// <param name="observerId">The exact observer identifier.</param>
+    /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
+    /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
+    /// <param name="eventSequenceId">The expected event sequence. Defaults to event-log.</param>
+    /// <param name="cancellationToken">Cancellation for the scoped reads.</param>
+    /// <returns>The observer diagnosis with bounded evidence.</returns>
+    [McpServerTool(Name = "diagnose_observer", ReadOnly = true, OpenWorld = false)]
+    [Description("Inspects one observer's reported running state, sequence positions, and unresolved failed partitions. Does not measure progress or start recovery.")]
+    public static Task<ObserverDiagnosis> DiagnoseObserver(
+        IServices services,
+        ChronicleConnectionConfiguration configuration,
+        [Description("The exact observer identifier.")] string observerId,
+        [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
+        [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null,
+        [Description("The expected event sequence. Defaults to event-log.")] string eventSequenceId = "event-log",
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(observerId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventSequenceId);
+        var reader = new ObserverDiagnosisReader(
+            services,
+            new AllObserversRequest { EventStore = configuration.ResolveEventStore(eventStore), Namespace = configuration.ResolveNamespace(@namespace) },
+            observerId,
+            eventSequenceId,
+            cancellationToken);
+        return reader.Read();
+    }
+
+    /// <summary>
     /// Lists observers in a namespace, optionally filtered by type.
     /// </summary>
     /// <param name="services">The Chronicle services.</param>

@@ -6,6 +6,8 @@
   href: events.md
 - name: Observer health
   href: observer-health.md
+- name: Diagnose an observer
+  href: diagnose-observer.md
 - name: Explain a failed partition
   href: failed-partitions.md
 - name: Jobs
