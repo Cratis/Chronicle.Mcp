@@ -9,6 +9,7 @@ using Cratis.Chronicle.Mcp.Configuration;
 using Grpc.Core;
 using ModelContextProtocol.Server;
 
+using static Cratis.Chronicle.Mcp.Tools.FailedPartitionAttempts;
 using static Cratis.Chronicle.Mcp.Tools.FailedPartitionExplanationFormatting;
 
 namespace Cratis.Chronicle.Mcp.Tools;
@@ -27,6 +28,7 @@ public static class FailedPartitionTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="observerId">Optional observer identifier to filter by.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
     /// <returns>A concise descriptor for each failed partition.</returns>
     [McpServerTool(Name = "list_failed_partitions", ReadOnly = true, OpenWorld = false)]
     [Description("Lists observer partitions that have failed and are paused, including the failure reason and the sequence number where the failure occurred. Use to discover what needs investigation or recovery.")]
@@ -35,30 +37,13 @@ public static class FailedPartitionTools
         ChronicleConnectionConfiguration configuration,
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null,
-        [Description("Optional observer identifier to filter by.")] string? observerId = null)
+        [Description("Optional observer identifier to filter by.")] string? observerId = null,
+        CancellationToken cancellationToken = default)
     {
-        var failedPartitions = await services.FailedPartitions.GetFailedPartitions(new GetFailedPartitionsRequest
-        {
-            EventStore = configuration.ResolveEventStore(eventStore),
-            Namespace = configuration.ResolveNamespace(@namespace),
-            ObserverId = observerId
-        });
-
-        return failedPartitions.Select(failedPartition =>
-        {
-            var lastAttempt = failedPartition.Attempts
-                .OrderByDescending(attempt => (DateTimeOffset?)attempt.Occurred ?? DateTimeOffset.MinValue)
-                .FirstOrDefault();
-
-            return new FailedPartitionDescriptor(
-                failedPartition.Id,
-                failedPartition.ObserverId,
-                failedPartition.Partition,
-                failedPartition.Attempts.Count(),
-                lastAttempt?.SequenceNumber,
-                lastAttempt is null ? null : string.Join(" | ", lastAttempt.Messages ?? []),
-                lastAttempt is null ? null : (DateTimeOffset?)lastAttempt.Occurred);
-        });
+        cancellationToken.ThrowIfCancellationRequested();
+        var request = ResolveScope(configuration, eventStore, @namespace);
+        request.ObserverId = observerId;
+        return (await services.FailedPartitions.GetFailedPartitions(request, cancellationToken)).Select(DescribeFailure);
     }
 
     /// <summary>
@@ -71,6 +56,7 @@ public static class FailedPartitionTools
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="eventSequenceId">The observer's event sequence. Defaults to event-log.</param>
     /// <param name="precedingCount">Maximum number of preceding events. Clamped to 0–50; defaults to 10.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
     /// <returns>The failure explanation or the reason a full explanation is unavailable.</returns>
     [McpServerTool(Name = "explain_failed_partition", ReadOnly = true, OpenWorld = false)]
     [Description("Inspects a failed partition's latest attempt, exact failed event, and bounded preceding sequence history. Does not perform recovery.")]
@@ -81,15 +67,12 @@ public static class FailedPartitionTools
         [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
         [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null,
         [Description("The observer's event sequence. Must match the observer metadata; defaults to event-log.")] string eventSequenceId = "event-log",
-        [Description("Maximum number of preceding events, clamped to 0–50. Defaults to 10.")] int precedingCount = 10)
+        [Description("Maximum number of preceding events, clamped to 0–50. Defaults to 10.")] int precedingCount = 10,
+        CancellationToken cancellationToken = default)
     {
-        var scope = new GetFailedPartitionsRequest
-        {
-            EventStore = configuration.ResolveEventStore(eventStore),
-            Namespace = configuration.ResolveNamespace(@namespace)
-        };
+        var scope = ResolveScope(configuration, eventStore, @namespace);
         var result = ForScope(failedPartitionId, scope, eventSequenceId, precedingCount);
-        var failure = await FindFailure(services, scope, failedPartitionId);
+        var failure = await FindFailure(services, scope, failedPartitionId, cancellationToken);
         if (failure is null) return result;
 
         var attempt = LatestAttempt(failure);
@@ -98,15 +81,15 @@ public static class FailedPartitionTools
         if (attempt is null) return result with { Status = "no_attempt" };
         if (attempt.SequenceNumber >= ulong.MaxValue - 2) return result with { Status = "no_event" };
 
-        var sequence = await ObservedSequence(services, scope, failure.ObserverId);
+        var sequence = await ObservedSequence(services, scope, failure.ObserverId, cancellationToken);
         if (sequence is null) return result with { Status = "sequence_unavailable" };
 
         result = WithObservedSequence(result, sequence);
         if (!string.Equals(sequence, eventSequenceId, StringComparison.Ordinal)) return result with { Status = "sequence_mismatch" };
 
         var request = PageAt(scope, eventSequenceId, attempt.SequenceNumber, result.Context.Limit + 1);
-        var page = await ReadPage(services.Sequences, request);
-        var current = await RecheckFailure(services, scope, failure);
+        var page = await ReadPage(services.Sequences, request, cancellationToken);
+        var current = await RecheckFailure(services, scope, failure, cancellationToken);
         if (current is null) return result with { Status = "disappeared" };
         if (DescribeChange(result, failure, attempt, current) is { } changed) return changed;
 
@@ -114,16 +97,38 @@ public static class FailedPartitionTools
         return page is null ? result with { Status = "unsupported" } : WithPage(result, page, attempt.SequenceNumber);
     }
 
-    static async Task<FailedPartition?> FindFailure(IServices services, GetFailedPartitionsRequest scope, Guid id) =>
-        (await services.FailedPartitions.GetFailedPartitions(scope)).SingleOrDefault(failure => failure.Id == id);
-
-    static async Task<string?> ObservedSequence(IServices services, GetFailedPartitionsRequest scope, string observerId)
+    static GetFailedPartitionsRequest ResolveScope(ChronicleConnectionConfiguration configuration, string? eventStore, string? @namespace) => new()
     {
-        var observers = await services.Observers.GetObservers(new AllObserversRequest
+        EventStore = configuration.ResolveEventStore(eventStore),
+        Namespace = configuration.ResolveNamespace(@namespace)
+    };
+
+    static FailedPartitionDescriptor DescribeFailure(FailedPartition failure)
+    {
+        var attempt = LatestAttempt(failure);
+        var screen = new DiagnosticTextScreen();
+        var reason = attempt is null ? null : screen.Apply(string.Join(" | ", (attempt.Messages ?? []).Select(screen.Apply)));
+
+        // Screen the stack for the flag, but do not add it to the concise list result.
+        screen.Apply(attempt?.StackTrace);
+        return new(failure.Id, failure.ObserverId, failure.Partition, (failure.Attempts ?? []).Count(), attempt?.SequenceNumber, reason, attempt?.Occurred)
         {
-            EventStore = scope.EventStore,
-            Namespace = scope.Namespace
-        });
+            DiagnosticsRedacted = screen.DiagnosticsRedacted
+        };
+    }
+
+    static async Task<FailedPartition?> FindFailure(IServices services, GetFailedPartitionsRequest scope, Guid id, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var failures = await services.FailedPartitions.GetFailedPartitions(scope, cancellationToken);
+        return failures.SingleOrDefault(failure => failure.Id == id);
+    }
+
+    static async Task<string?> ObservedSequence(IServices services, GetFailedPartitionsRequest scope, string observerId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var request = new AllObserversRequest { EventStore = scope.EventStore, Namespace = scope.Namespace };
+        var observers = await services.Observers.GetObservers(request, cancellationToken);
         var matches = observers.Where(observer => string.Equals(observer.Id, observerId, StringComparison.Ordinal)).Take(2).ToArray();
         return matches.Length == 1 && !string.IsNullOrWhiteSpace(matches[0].EventSequenceId) ? matches[0].EventSequenceId : null;
     }
@@ -139,11 +144,12 @@ public static class FailedPartitionTools
         Backward = true
     };
 
-    static async Task<EventSequencePageResponse?> ReadPage(IEventSequences sequences, PageRequest request)
+    static async Task<EventSequencePageResponse?> ReadPage(IEventSequences sequences, PageRequest request, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         try
         {
-            return QueryResults.Unwrap(await sequences.Page(request));
+            return QueryResults.Unwrap(await sequences.Page(request, cancellationToken));
         }
         catch (RpcException exception) when (exception.StatusCode == StatusCode.Unimplemented)
         {
@@ -151,7 +157,7 @@ public static class FailedPartitionTools
         }
     }
 
-    static Task<FailedPartition?> RecheckFailure(IServices services, GetFailedPartitionsRequest scope, FailedPartition failure)
+    static Task<FailedPartition?> RecheckFailure(IServices services, GetFailedPartitionsRequest scope, FailedPartition failure, CancellationToken cancellationToken)
     {
         var request = new GetFailedPartitionsRequest
         {
@@ -159,7 +165,7 @@ public static class FailedPartitionTools
             Namespace = scope.Namespace,
             ObserverId = failure.ObserverId
         };
-        return FindFailure(services, request, failure.Id);
+        return FindFailure(services, request, failure.Id, cancellationToken);
     }
 
     static FailedPartitionExplanation? DescribeChange(
@@ -174,13 +180,14 @@ public static class FailedPartitionTools
     }
 
     static bool SamePartition(FailedPartition initial, FailedPartition current) =>
-        initial.ObserverId == current.ObserverId && initial.Partition == current.Partition;
+        string.Equals(initial.ObserverId, current.ObserverId, StringComparison.Ordinal) &&
+        string.Equals(initial.Partition, current.Partition, StringComparison.Ordinal);
 
     static bool IsSameAttempt(FailedPartitionAttempt attempt, FailedPartitionAttempt? latest) =>
         latest is not null &&
         attempt.SequenceNumber == latest.SequenceNumber &&
         (DateTimeOffset?)attempt.Occurred == (DateTimeOffset?)latest.Occurred &&
         attempt.Kind == latest.Kind &&
-        attempt.StackTrace == latest.StackTrace &&
+        string.Equals(attempt.StackTrace, latest.StackTrace, StringComparison.Ordinal) &&
         (attempt.Messages ?? []).SequenceEqual(latest.Messages ?? [], StringComparer.Ordinal);
 }

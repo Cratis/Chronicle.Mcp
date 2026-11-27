@@ -45,15 +45,21 @@ internal static class FailedPartitionExplanationFormatting
     internal static FailedPartitionExplanation WithFailure(
         FailedPartitionExplanation result,
         FailedPartition failure,
-        FailedPartitionAttempt? attempt) => result with
+        FailedPartitionAttempt? attempt)
     {
-        ObserverId = Display(failure.ObserverId),
-        Partition = Display(failure.Partition),
-        IsResolved = failure.IsResolved,
-        IsQuarantined = failure.IsQuarantined,
-        Attempt = attempt is null ? null : DescribeAttempt(attempt),
-        IdentifiersTruncated = result.IdentifiersTruncated || IdentifiersTooLong(failure.ObserverId, failure.Partition)
-    };
+        var screen = new DiagnosticTextScreen();
+        var evidence = attempt is null ? null : DescribeAttempt(attempt, screen);
+        return result with
+        {
+            ObserverId = Display(failure.ObserverId),
+            Partition = Display(failure.Partition),
+            IsResolved = failure.IsResolved,
+            IsQuarantined = failure.IsQuarantined,
+            Attempt = evidence,
+            DiagnosticsRedacted = screen.DiagnosticsRedacted,
+            IdentifiersTruncated = result.IdentifiersTruncated || IdentifiersTooLong(failure.ObserverId, failure.Partition)
+        };
+    }
 
     /// <summary>
     /// Adds the sequence reported by the observer metadata.
@@ -100,20 +106,12 @@ internal static class FailedPartitionExplanationFormatting
     }
 
     /// <summary>
-    /// Selects the last recorded attempt at the latest occurrence time.
-    /// </summary>
-    /// <param name="failure">The failure containing the attempts.</param>
-    /// <returns>The latest attempt, or null when none were recorded.</returns>
-    internal static FailedPartitionAttempt? LatestAttempt(FailedPartition failure) =>
-        (failure.Attempts ?? []).OrderBy(attempt => (DateTimeOffset?)attempt.Occurred).LastOrDefault();
-
-    /// <summary>
-    /// Projects the retained diagnostic fields, allowing a caller to withhold text before clipping.
+    /// Screens the retained diagnostic fields before clipping them.
     /// </summary>
     /// <param name="attempt">The attempt to project.</param>
-    /// <param name="screen">An optional screen applied to original retained text.</param>
+    /// <param name="screen">The screen applied to original retained text.</param>
     /// <returns>The bounded attempt description with limits reported against the source text.</returns>
-    internal static FailedPartitionAttemptExplanation DescribeAttempt(FailedPartitionAttempt attempt, Func<string, string>? screen = null)
+    internal static FailedPartitionAttemptExplanation DescribeAttempt(FailedPartitionAttempt attempt, DiagnosticTextScreen screen)
     {
         var messages = (attempt.Messages ?? []).Take(MaxMessages + 1).ToArray();
         var retained = messages.Take(MaxMessages).ToArray();
@@ -121,8 +119,8 @@ internal static class FailedPartitionExplanationFormatting
             attempt.Kind.ToString(),
             attempt.Occurred,
             attempt.SequenceNumber,
-            retained.Select(message => Shorten(screen?.Invoke(message) ?? message, MaxMessageLength)).ToArray(),
-            attempt.StackTrace is { } stack ? Shorten(screen?.Invoke(stack) ?? stack, MaxStackLength) : null,
+            retained.Select(message => Shorten(screen.Apply(message), MaxMessageLength)).ToArray(),
+            attempt.StackTrace is { } stack ? Shorten(screen.Apply(stack), MaxStackLength) : null,
             messages.Length > MaxMessages,
             retained.Any(message => message.Length > MaxMessageLength),
             attempt.StackTrace?.Length > MaxStackLength);
