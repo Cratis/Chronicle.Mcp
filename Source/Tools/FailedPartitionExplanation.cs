@@ -51,6 +51,11 @@ public record FailedPartitionExplanation(
     public FailedPartitionAttemptExplanation? Attempt { get; init; }
 
     /// <summary>
+    /// Gets whether the credential screen withheld any retained attempt diagnostics.
+    /// </summary>
+    public bool DiagnosticsRedacted { get; init; }
+
+    /// <summary>
     /// Gets the exact failed event, when established by the read.
     /// </summary>
     public FailedPartitionEventExplanation? FailedEvent { get; init; }

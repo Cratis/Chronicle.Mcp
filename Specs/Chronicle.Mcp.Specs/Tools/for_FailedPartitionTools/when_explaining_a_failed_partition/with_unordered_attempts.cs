@@ -25,4 +25,7 @@ public class with_unordered_attempts : given.a_failed_partition_query
     [Fact] void should_read_at_the_selected_attempt() => _pageRequests.Single().From.ShouldEqual(500UL);
     [Fact] void should_include_the_attempt_kind() => _result.Attempt!.Kind.ShouldEqual("Timeout");
     [Fact] void should_include_the_attempt_time() => _result.Attempt!.Occurred.ShouldEqual(Occurred.AddHours(1));
+    [Fact] void should_keep_clean_messages() => _result.Attempt!.Messages.ShouldEqual<string>("Sample failure");
+    [Fact] void should_keep_a_clean_stack() => _result.Attempt!.StackTrace.ShouldEqual("Sample stack");
+    [Fact] void should_not_report_withholding() => _result.DiagnosticsRedacted.ShouldBeFalse();
 }
