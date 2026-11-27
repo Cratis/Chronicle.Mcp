@@ -57,9 +57,15 @@ public static class McpOptionsBinding
     {
         // Bind model names as values: configuration keys are case-insensitive and merge across declarations.
         var models = section.GetSection(nameof(McpServerOptions.ModelCatalog)).GetSection(nameof(ScreenplayModelCatalogOptions.Models));
-        var entries = models.GetChildren().ToArray();
-        if (models.Value is null && entries.Length == options.ModelCatalog?.Models?.Count && entries.All(IsIndexedModel)) return;
+        if (IsIndexedModelList(models, options)) return;
         options.ModelCatalog = new();
+    }
+
+    static bool IsIndexedModelList(IConfigurationSection models, McpServerOptions options)
+    {
+        if (models.Value is not null) return false;
+        var entries = models.GetChildren().ToArray();
+        return entries.Length == options.ModelCatalog?.Models?.Count && entries.All(IsIndexedModel);
     }
 
     static bool IsIndexedModel(IConfigurationSection entry) =>
