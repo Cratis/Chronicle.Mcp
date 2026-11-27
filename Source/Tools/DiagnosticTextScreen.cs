@@ -12,16 +12,26 @@ namespace Cratis.Chronicle.Mcp.Tools;
 internal sealed partial class DiagnosticTextScreen
 {
     /// <summary>
+    /// Normalized suffixes. Shorter suffixes also cover clientsecret, sharedaccesskey, and setcookie.
+    /// </summary>
+    static readonly string[] _credentialKeySuffixes =
+    [
+        "password", "passwd", "pwd", "secret", "token", "apikey", "accesskey", "secretkey", "accountkey", "privatekey",
+        "sharedaccesssignature", "credential", "credentials", "authorization", "cookie"
+    ];
+
+    /// <summary>
     /// Gets whether any text screened by this instance was withheld.
     /// </summary>
     internal bool DiagnosticsRedacted { get; private set; }
 
+    [GeneratedRegex("""(?<key>[A-Za-z0-9_.-]+)(?:\\?["'])?\s*[:=]""", RegexOptions.NonBacktracking)]
+    private static partial Regex CandidateAssignment { get; }
+
     [GeneratedRegex(
-        """\b(?:authorization|[\p{L}\p{Nd}_.-]*(?:password|passwd|pwd|secret|token|api(?:[_-]| +)?key|accesskey|accountkey|sharedaccesskey|sharedaccesssignature|credentials?|privatekey))(?:\\?["'])?\s*[:=]""" +
-        """|\b(?:bearer|basic)\s+|\b(?:set-)?cookie\s*:""" +
-        """|://[^\s@]+:[^\s@]+@|-----BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----""",
+        """\bbearer\s+[A-Za-z0-9._~+/=-]{16,}|://[^\s/?#@]*:[^\s/?#@]+@|-----BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----""",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
-    private static partial Regex CredentialMarker { get; }
+    private static partial Regex StandaloneCredentialMarker { get; }
 
     /// <summary>
     /// Screens one complete diagnostic field before any clipping.
@@ -31,8 +41,19 @@ internal sealed partial class DiagnosticTextScreen
     [return: NotNullIfNotNull(nameof(text))]
     internal string? Apply(string? text)
     {
-        if (text is null || !CredentialMarker.IsMatch(text)) return text;
+        if (text is null || !ContainsCredentialMarker(text)) return text;
         DiagnosticsRedacted = true;
         return "[withheld]";
     }
+
+    static bool ContainsCredentialMarker(string text) =>
+        StandaloneCredentialMarker.IsMatch(text) || CandidateAssignment.Matches(text).Any(HasCredentialKey);
+
+    static bool HasCredentialKey(Match assignment)
+    {
+        var key = NormalizeKey(assignment.Groups["key"].Value);
+        return _credentialKeySuffixes.Any(suffix => key.EndsWith(suffix, StringComparison.Ordinal));
+    }
+
+    static string NormalizeKey(string key) => new(key.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
 }
