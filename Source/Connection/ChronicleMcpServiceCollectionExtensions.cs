@@ -38,6 +38,7 @@ public static class ChronicleMcpServiceCollectionExtensions
         services.AddSingleton(sp => ((IChronicleServicesAccessor)sp.GetRequiredService<IChronicleConnection>()).Services);
         services.AddKeyedSingleton<IGetServicesAsynchronously>(ConformanceConnection.Key, (sp, _) => CreateConnection(sp, audit: true));
         services.AddSingleton(_ => new ConformanceConnection());
+        CatalogStartup.Register(services);
 
         return services.AddCratisChronicleServices();
     }

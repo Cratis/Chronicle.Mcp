@@ -14,6 +14,7 @@ using Cratis.Chronicle.Mcp.Authorization;
 using Cratis.Chronicle.Mcp.Tools.Design.Conformance;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using NSubstitute;
@@ -39,6 +40,7 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
     protected List<EventMetadataResponse> _metadata;
     protected List<MetadataAtRequest> _pages;
     protected ServiceProvider _provider;
+    protected Configuration.McpServerOptions _options;
     protected CallToolResult _result;
 
     protected JsonElement Body => _result.StructuredContent!.Value.GetProperty("untrustedData").GetProperty("content");
@@ -60,8 +62,11 @@ public class a_namespace_audit : Authorization.Specs.given.a_policy
         SetUpRegistry();
         SetUpMetadata();
         _auditServices = new(_reads);
-        _provider = new ServiceCollection().AddSingleton(_configuration).AddSingleton(_clock).AddSingleton<ConformanceConnection>()
-            .AddKeyedSingleton<IGetServicesAsynchronously>("screenplay-conformance", _auditServices).BuildServiceProvider();
+        _options = new();
+        var services = new ServiceCollection().AddSingleton(_configuration).AddSingleton(_clock).AddSingleton<ConformanceConnection>()
+            .AddSingleton(Options.Create(_options)).AddKeyedSingleton<IGetServicesAsynchronously>("screenplay-conformance", _auditServices);
+        CatalogStartup.Register(services);
+        _provider = services.BuildServiceProvider();
     }
 
     protected void Argument<T>(string name, T value) => _arguments[name] = JsonSerializer.SerializeToElement(value);
