@@ -28,7 +28,8 @@ internal static class CatalogPaths
     /// <returns>Whether the root path is admitted.</returns>
     internal static bool IsRoot(string? path)
     {
-        if (path is not { Length: > 1 and <= 4095 } || path[0] != '/' || path.Any(char.IsControl) || !path[1..].Split('/').All(IsComponent)) return false;
+        if (path is not { Length: > 1 and <= 4095 } || path[0] != '/') return false;
+        if (path.Any(char.IsControl) || !path[1..].Split('/').All(IsComponent)) return false;
         try
         {
             return _utf8.GetByteCount(path) <= 4095;
@@ -46,7 +47,8 @@ internal static class CatalogPaths
     internal static bool TryDocument(string? path, [NotNullWhen(true)] out PortablePlayPath? portable)
     {
         portable = null;
-        if (!IsRelative(path) || !PortablePlayPath.TryParse(path, out var parsed) || parsed.Value != path) return false;
+        if (!IsRelative(path)) return false;
+        if (!PortablePlayPath.TryParse(path, out var parsed) || parsed.Value != path) return false;
         portable = parsed;
         return true;
     }

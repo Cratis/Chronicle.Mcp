@@ -97,7 +97,8 @@ internal static class ConformanceModelSources
         using var reader = new StringReader(source);
         while (reader.ReadLine() is { } line)
         {
-            if (--remainingLines < 0 || _utf8.GetByteCount(line) > MaxLineBytes || !ValidIndent(line.AsSpan().TrimStart('\uFEFF'))) return false;
+            if (--remainingLines < 0) return false;
+            if (_utf8.GetByteCount(line) > MaxLineBytes || !ValidIndent(line.AsSpan().TrimStart('\uFEFF'))) return false;
         }
 
         return true;

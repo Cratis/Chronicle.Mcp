@@ -9,6 +9,11 @@ namespace Cratis.Chronicle.Mcp.Configuration;
 public sealed class ScreenplayModelManifestOptions
 {
     /// <summary>
+    /// Gets or sets the published model name, matched exactly.
+    /// </summary>
+    public string? Name { get; set; }
+
+    /// <summary>
     /// Gets or sets the configured root alias, matched exactly.
     /// </summary>
     public string? Root { get; set; }

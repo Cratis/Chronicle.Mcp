@@ -37,13 +37,14 @@ The catalog is off by default. To opt in, add `ModelCatalog` under `Cratis:Chron
       "Mcp": {
         "ModelCatalog": {
           "Roots": { "release": "/models/library" },
-          "Models": {
-            "Library": {
+          "Models": [
+            {
+              "Name": "Library",
               "Root": "release",
               "Entry": "application.play",
               "Files": ["application.play", "registration/register.play"]
             }
-          }
+          ]
         }
       }
     }
@@ -64,10 +65,10 @@ In this example, `/models/library/application.play` imports `registration/regist
 }
 ```
 
-- Up to 16 root aliases and 64 model names are supported. Names and aliases are case-sensitive, use 1–64 ASCII letters, digits, `_`, or `-`, and cannot differ only in case.
+- Up to 16 root aliases and 64 model names are supported. Names and aliases are case-sensitive, use 1–64 ASCII letters, digits, `_`, or `-`, and cannot differ only in case. Declare each model as a `Models` array entry with an explicit `Name`, not as an object keyed by model name.
 - List every file in `Files`, including the root-level `Entry` (at most 16 files total per model). Use distinct portable relative paths ending in `.play`, with forward slashes, at most 16 components, and at most 240 characters. Absolute paths, backslashes, `.` and `..` components, and wildcards in manifest paths are not allowed.
 - Every listed file must be reached from `Entry`. Relative file imports and globs resolve only against the manifest. Rooted imports, traversal, unmatched imports, domain imports, and system extensions are refused. Files and extension artifacts are never auto-discovered.
-- Catalog reads require Linux x64 or arm64 with kernel 5.6 or later and a seccomp policy that allows `openat2`. Use an absolute root other than `/`; the root and its ancestors must not be symlinks. In Docker, mount an operator-managed model directory read-only at the configured root (for example, `/models/library`). Files must be regular and cannot be reached through symlinks or nested mounts. No procfs access is required to read them.
+- Catalog reads require Linux x64 or arm64 with kernel 5.6 or later and a seccomp policy that allows `openat2`. Use an absolute root other than `/`; the root and its ancestors must not be symlinks. In Docker, mount an operator-managed model directory read-only at the configured root (for example, `/models/library`). Files must be regular and cannot be reached through symlinks or nested mounts. No procfs access is required to read them. Use local filesystems, not NFS or FUSE: a stalled filesystem read cannot be canceled while the server's audit slot is held.
 - Settings and roots are captured at startup. If a root is missing or unavailable then, restart after correcting it. An unavailable catalog does not disable inline audits. Pinning a directory does not freeze its contents or verify their provenance; use operator-controlled, read-only snapshots for reproducibility.
 
 **All authorized audit callers in either deployment profile can select every published name.** Publish only nonsecret models from operator-controlled trees. Never publish from a shared writable directory.

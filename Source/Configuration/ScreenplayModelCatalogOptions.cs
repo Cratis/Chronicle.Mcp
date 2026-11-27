@@ -14,7 +14,7 @@ public sealed class ScreenplayModelCatalogOptions
     public IDictionary<string, string> Roots { get; set; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>
-    /// Gets or sets published model manifests keyed by catalog name.
+    /// Gets or sets published model manifests, each with an explicit catalog name.
     /// </summary>
-    public IDictionary<string, ScreenplayModelManifestOptions> Models { get; set; } = new Dictionary<string, ScreenplayModelManifestOptions>(StringComparer.Ordinal);
+    public IList<ScreenplayModelManifestOptions> Models { get; set; } = new List<ScreenplayModelManifestOptions>();
 }

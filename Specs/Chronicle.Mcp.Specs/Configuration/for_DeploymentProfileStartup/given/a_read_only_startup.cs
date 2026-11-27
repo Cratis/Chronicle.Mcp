@@ -25,7 +25,7 @@ public class a_read_only_startup : Specification
         _provider = new ServiceCollection().AddDeploymentPolicy(_configuration).AddChronicleMcpConnection().BuildServiceProvider();
     }
 
-    protected Task Start() => _provider.GetServices<IHostedService>().Single().StartAsync(CancellationToken.None);
+    protected Task Start() => _provider.GetServices<IHostedService>().OfType<DeploymentProfileStartup>().Single().StartAsync(CancellationToken.None);
 
     void Destroy() => _provider.Dispose();
 }

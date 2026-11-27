@@ -26,7 +26,7 @@ public class when_opening_documents : Specification
 
     void Destroy() => _sandbox.Delete(recursive: true);
 
-    [Fact(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.IsLinux))]
+    [Fact(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.SupportsCatalog))]
     void should_read_the_original_root_after_its_path_is_replaced()
     {
         using var reader = OpenReader();
@@ -36,7 +36,7 @@ public class when_opening_documents : Specification
         reader.Read("model.play", 6, Cancellation).Bytes.ShouldEqual("inside"u8.ToArray());
     }
 
-    [Theory(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.IsLinux))]
+    [Theory(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.SupportsCatalog))]
     [InlineData("inside.play")]
     [InlineData("escape.play")]
     [InlineData("parent/model.play")]
@@ -61,7 +61,7 @@ public class when_opening_documents : Specification
         reader.Read(entry, 6, Cancellation).Bytes.ShouldBeNull();
     }
 
-    [Theory(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.IsLinux))]
+    [Theory(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.SupportsCatalog))]
     [InlineData(2)]
     [InlineData(8)]
     void should_refuse_a_document_that_changes_length_on_the_open_descriptor(int changedLength)
@@ -76,7 +76,7 @@ public class when_opening_documents : Specification
         ConfinedCatalogReader.ReadContents(document!, (int)size, Cancellation).ShouldBeNull();
     }
 
-    [Fact(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.IsLinux))]
+    [Fact(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.SupportsCatalog))]
     void should_refuse_crossing_the_proc_mount_from_the_filesystem_root()
     {
         File.Exists("/proc/version").ShouldBeTrue();
@@ -89,7 +89,7 @@ public class when_opening_documents : Specification
         result.Error.ShouldEqual(18); // EXDEV, asm-generic/errno-base.h
     }
 
-    [Fact(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.IsLinux))]
+    [Fact(Skip = LinuxCatalogPlatform.RequiresLinux, SkipType = typeof(LinuxCatalogPlatform), SkipUnless = nameof(LinuxCatalogPlatform.SupportsCatalog))]
     async Task should_never_read_an_outside_file_while_the_leaf_is_swapped()
     {
         using var reader = OpenReader();
