@@ -10,6 +10,7 @@ using Cratis.Screenplay.Observations;
 using Cratis.Screenplay.Semantics;
 using Cratis.Screenplay.Workspaces;
 using Grpc.Core;
+using Microsoft.Extensions.DependencyInjection;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using ProtoBuf.Grpc;
@@ -17,7 +18,7 @@ using ProtoBuf.Grpc;
 namespace Cratis.Chronicle.Mcp.Tools.Design;
 
 /// <summary>
-/// Compares bounded Chronicle metadata with an inline Screenplay model.
+/// Compares bounded Chronicle metadata with an inline or operator-published Screenplay model.
 /// </summary>
 /// <param name="services">The service provider for the lazy audit connection.</param>
 /// <param name="connection">The shared audit admission slot.</param>
@@ -40,24 +41,26 @@ public sealed class ScreenplayConformanceTools(IServiceProvider services, Confor
     /// <param name="sequence">Exact Chronicle sequence.</param>
     /// <param name="fromSequence">Inclusive nonnegative start position.</param>
     /// <param name="toSequence">Inclusive end position, clamped to the captured tail.</param>
-    /// <param name="modelSource">A single self-contained inline Screenplay document.</param>
+    /// <param name="modelSource">A single self-contained inline Screenplay document. Use this or catalogModel, not both.</param>
     /// <param name="applicationName">Optional semantic application name.</param>
     /// <param name="occurredFrom">Optional inclusive UTC time filter lower bound.</param>
     /// <param name="occurredTo">Optional exclusive UTC time filter upper bound.</param>
+    /// <param name="catalogModel">The exact name of an operator-published model. Not a filesystem path.</param>
     /// <param name="cancellationToken">The caller's cancellation token.</param>
     /// <returns>A conformance report or a sanitized error.</returns>
     [McpServerTool(Name = Name, ReadOnly = true, OpenWorld = false)]
-    [Description("Compare a self-contained inline Screenplay model with metadata from one explicit Chronicle sequence. Reports bounded evidence, not runtime correctness.")]
+    [Description("Compare a Screenplay model with metadata from one explicit Chronicle sequence. Supply either a self-contained inline modelSource or an operator-published catalogModel name. Reports bounded evidence, not runtime correctness.")]
     public async Task<CallToolResult> AuditScreenplayConformance(
         string eventStore,
         string @namespace,
         string sequence,
         long fromSequence,
         long toSequence,
-        string modelSource,
+        string? modelSource = null,
         string? applicationName = null,
         DateTimeOffset? occurredFrom = null,
         DateTimeOffset? occurredTo = null,
+        string? catalogModel = null,
         CancellationToken cancellationToken = default)
     {
         var scope = new ConformanceScope(eventStore, @namespace, sequence, new(fromSequence, toSequence), (occurredFrom, occurredTo));
@@ -66,11 +69,12 @@ public sealed class ScreenplayConformanceTools(IServiceProvider services, Confor
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!ConformanceModelSources.Admit(modelSource)) return ConformanceReportPage.Error("conformance_model_limit");
-            var (compilation, diagnostics) = ConformanceModelSources.Compile(modelSource, applicationName, configuration.ResolveEventStore());
-            if (compilation is null) return ConformanceReportPage.InvalidModel(diagnostics);
+            var (compilation, refusal) = catalogModel is null
+                ? CompileInline(modelSource, applicationName)
+                : CompileCatalog(catalogModel, modelSource, applicationName, cancellationToken);
+            if (refusal is not null) return refusal;
             cancellationToken.ThrowIfCancellationRequested();
-            return await Compare(scope, compilation, cancellationToken);
+            return await Compare(scope, compilation!, cancellationToken);
         }
         catch (Exception exception) when (exception is EncoderFallbackException or InvalidScreenplayWorkspace or InvalidWorkspaceDocument or InvalidSemanticContract)
         {
@@ -84,6 +88,51 @@ public sealed class ScreenplayConformanceTools(IServiceProvider services, Confor
         {
             connection.Exit();
         }
+    }
+
+    /// <summary>
+    /// Compares an inline model using the original positional overload.
+    /// </summary>
+    /// <param name="eventStore">Exact Chronicle event store.</param>
+    /// <param name="namespace">Exact Chronicle namespace.</param>
+    /// <param name="sequence">Exact Chronicle sequence.</param>
+    /// <param name="fromSequence">Inclusive nonnegative start position.</param>
+    /// <param name="toSequence">Inclusive end position, clamped to the captured tail.</param>
+    /// <param name="modelSource">A single self-contained inline Screenplay document.</param>
+    /// <param name="applicationName">Optional semantic application name.</param>
+    /// <param name="occurredFrom">Optional inclusive UTC time filter lower bound.</param>
+    /// <param name="occurredTo">Optional exclusive UTC time filter upper bound.</param>
+    /// <param name="cancellationToken">The caller's cancellation token.</param>
+    /// <returns>A conformance report or a sanitized error.</returns>
+    public Task<CallToolResult> AuditScreenplayConformance(
+        string eventStore,
+        string @namespace,
+        string sequence,
+        long fromSequence,
+        long toSequence,
+        string modelSource,
+        string? applicationName,
+        DateTimeOffset? occurredFrom,
+        DateTimeOffset? occurredTo,
+        CancellationToken cancellationToken) =>
+        AuditScreenplayConformance(eventStore, @namespace, sequence, fromSequence, toSequence, modelSource, applicationName, occurredFrom, occurredTo, catalogModel: null, cancellationToken);
+
+    (SemanticCompilation? Model, CallToolResult? Refusal) CompileInline(string? source, string? applicationName)
+    {
+        if (source is null || !ConformanceModelSources.Admit(source)) return (null, ConformanceReportPage.Error("conformance_model_limit"));
+        var (model, diagnostics) = ConformanceModelSources.Compile(source, applicationName, configuration.ResolveEventStore());
+        return (model, model is null ? ConformanceReportPage.InvalidModel(diagnostics) : null);
+    }
+
+    (SemanticCompilation? Model, CallToolResult? Refusal) CompileCatalog(string name, string? inline, string? applicationName, CancellationToken cancellationToken)
+    {
+        if (inline is not null) return (null, ConformanceReportPage.Error("conformance_catalog_unavailable"));
+        var catalog = services.GetRequiredService<ConformanceModelCatalog>();
+        var (entry, documents, error) = catalog.Load(name, cancellationToken);
+        if (error is not null) return (null, ConformanceReportPage.Error(error));
+        cancellationToken.ThrowIfCancellationRequested();
+        var (model, diagnostics) = CatalogModelCompilation.Compile(entry!, documents!, applicationName, configuration.ResolveEventStore());
+        return (model, model is null ? ConformanceReportPage.InvalidModel(diagnostics) : null);
     }
 
     async Task<CallToolResult> Compare(ConformanceScope scope, SemanticCompilation compilation, CancellationToken cancellationToken)

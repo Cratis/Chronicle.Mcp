@@ -44,7 +44,7 @@ public class a_delayed_connection : Configuration.for_ChronicleConnectionConfigu
             .BuildServiceProvider();
     }
 
-    protected Task Start() => _provider.GetServices<IHostedService>().Single().StartAsync(CancellationToken.None);
+    protected Task Start() => _provider.GetServices<IHostedService>().OfType<DeploymentProfileStartup>().Single().StartAsync(CancellationToken.None);
 
     void Destroy() => _provider.Dispose();
 }

@@ -1,9 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Cratis.Chronicle.Mcp</RootNamespace>
     <AssemblyName>Cratis.Chronicle.Mcp</AssemblyName>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Cratis.Chronicle.Mcp.Specs" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Cratis.Chronicle.Connections" />
     <PackageReference Include="Cratis.Chronicle.Contracts" />

@@ -23,6 +23,11 @@ public class McpServerOptions
     public MutationAuthorization Authorization { get; set; } = new();
 
     /// <summary>
+    /// Gets or sets the opt-in catalog of Screenplay models published for conformance audits.
+    /// </summary>
+    public ScreenplayModelCatalogOptions ModelCatalog { get; set; } = new();
+
+    /// <summary>
     /// Gets or sets the connection string for the Chronicle server.
     /// </summary>
     /// <remarks>

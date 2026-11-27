@@ -70,7 +70,7 @@ Explicit API keys, embedded credentials and explicit `ClientId`/`ClientSecret` o
 
 ## Screenplay audit
 
-[`audit_screenplay_conformance`](design-time/screenplay-conformance.md) uses a separate, size-limited Chronicle connection with the same configured destination and credentials. The audit connection skips the session handshake and keeps OAuth tokens in memory instead of using the shared disk cache. It adds no configuration keys and accepts only an inline model; it never opens model files or resolves external model references. Other tools keep their existing connection and cache behavior.
+[`audit_screenplay_conformance`](design-time/screenplay-conformance.md) uses a separate, size-limited Chronicle connection with the same configured destination and credentials. The audit connection skips the session handshake and keeps OAuth tokens in memory instead of using the shared disk cache. It accepts inline models by default. The optional [`Cratis:Chronicle:Mcp:ModelCatalog`](design-time/screenplay-conformance.md#publish-a-model-catalog) publishes an array of explicitly named file manifests under operator-configured local Linux directories. With no roots or models configured, no model files are opened. Neither source resolves external model references. Other tools keep their existing connection and cache behavior.
 
 ## Migrating existing configuration
 

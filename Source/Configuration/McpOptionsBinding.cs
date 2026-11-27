@@ -1,6 +1,7 @@
 // Copyright (c) Cratis. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Globalization;
 using Microsoft.Extensions.Configuration;
 
 namespace Cratis.Chronicle.Mcp.Configuration;
@@ -36,6 +37,7 @@ public static class McpOptionsBinding
             // Only the authorization policy is bound strictly: a dropped value there could fail open, while an
             // obsolete connection setting (such as the removed ManagementPort) must not stop an upgraded server.
             section.Bind(options);
+            RejectNonIndexedModels(section, options);
             var authorization = new MutationAuthorization();
             section.GetSection(nameof(McpServerOptions.Authorization)).Bind(authorization, binder => binder.ErrorOnUnknownConfiguration = true);
             var sectionPolicy = section.GetSection(nameof(McpServerOptions.Authorization));
@@ -50,4 +52,23 @@ public static class McpOptionsBinding
             throw new InvalidMcpConfiguration(SectionPath);
         }
     }
+
+    static void RejectNonIndexedModels(IConfiguration section, McpServerOptions options)
+    {
+        // Bind model names as values: configuration keys are case-insensitive and merge across declarations.
+        var models = section.GetSection(nameof(McpServerOptions.ModelCatalog)).GetSection(nameof(ScreenplayModelCatalogOptions.Models));
+        if (IsIndexedModelList(models, options)) return;
+        options.ModelCatalog = new();
+    }
+
+    static bool IsIndexedModelList(IConfigurationSection models, McpServerOptions options)
+    {
+        if (models.Value is not null) return false;
+        var entries = models.GetChildren().ToArray();
+        return entries.Length == options.ModelCatalog?.Models?.Count && entries.All(IsIndexedModel);
+    }
+
+    static bool IsIndexedModel(IConfigurationSection entry) =>
+        entry.Value is null && uint.TryParse(entry.Key, NumberStyles.None, CultureInfo.InvariantCulture, out var index) &&
+        entry.Key == index.ToString(CultureInfo.InvariantCulture);
 }
