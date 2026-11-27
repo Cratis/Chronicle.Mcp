@@ -17,7 +17,9 @@ internal sealed partial class DiagnosticTextScreen
     internal bool DiagnosticsRedacted { get; private set; }
 
     [GeneratedRegex(
-        """\b(?:(?:authorization|password|token|secret|(?:access|refresh)(?:_| +)?token|client(?:_| +)?secret|api(?:_| +)?key)["']?\s*[:=]|bearer\s+)|-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----""",
+        """\b(?:authorization|[\p{L}\p{Nd}_.-]*(?:password|passwd|pwd|secret|token|api(?:[_-]| +)?key|accesskey|accountkey|sharedaccesskey|sharedaccesssignature|credentials?|privatekey))(?:\\?["'])?\s*[:=]""" +
+        """|\b(?:bearer|basic)\s+|\b(?:set-)?cookie\s*:""" +
+        """|://[^\s@]+:[^\s@]+@|-----BEGIN [A-Z0-9 ]*PRIVATE KEY(?: BLOCK)?-----""",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.NonBacktracking)]
     private static partial Regex CredentialMarker { get; }
 

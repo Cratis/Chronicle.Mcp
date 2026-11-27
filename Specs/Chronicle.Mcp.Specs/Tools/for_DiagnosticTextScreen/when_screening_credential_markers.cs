@@ -27,9 +27,46 @@ public class when_screening_credential_markers : a_failed_partition_query
         "Authorization: synthetic-marker",
         "Bearer synthetic-marker",
         "Password=synthetic-marker",
-        "-----BEGIN ENCRYPTED PRIVATE KEY-----"
+        "-----BEGIN ENCRYPTED PRIVATE KEY-----",
+        "-----BEGIN PGP PRIVATE KEY BLOCK-----",
+        "DB_PASSWORD=synthetic-marker",
+        "GITHUB_TOKEN=synthetic-marker",
+        "userPassword: synthetic-marker",
+        "café2Password: synthetic-marker",
+        "config.idToken = synthetic-marker",
+        "client-secret: synthetic-marker",
+        "unrelated_api_key: example",
+        "X-Api-Key: synthetic-marker",
+        "X-Auth-Token: synthetic-marker",
+        """{\"password\":\"synthetic-marker\"}""",
+        """{\'password\':\'synthetic-marker\'}""",
+        "Server=example.invalid;Pwd=synthetic-marker;Database=sample",
+        "Server=example.invalid;Password=synthetic-marker;User ID=sample",
+        "AccountName=sample;AccountKey=synthetic-marker",
+        "Endpoint=example.invalid;SharedAccessKey=synthetic-marker",
+        "Endpoint=example.invalid;SharedAccessSignature=synthetic-marker",
+        "cloud.accessKey: synthetic-marker",
+        "user.passwd=synthetic-marker",
+        "serviceCredential: synthetic-marker",
+        "serviceCredentials: synthetic-marker",
+        "signing.privateKey: synthetic-marker",
+        "bAsIc synthetic-marker",
+        "Cookie: session=synthetic-marker",
+        "Set-Cookie: session=synthetic-marker",
+        "scheme://sample:synthetic-marker@example.invalid"
     ];
-    static readonly string[] _prose = ["token expired", "password policy", "client secret rotation", "secretary: example", "unrelated_api_key: example"];
+    static readonly string[] _prose =
+    [
+        "token expired",
+        "password policy updated",
+        "the secret sauce",
+        "client secret rotation",
+        "secretary: example",
+        "tokenCount: 3",
+        "User ID=sample",
+        "https://example.invalid:443/path",
+        "https://sample@example.invalid"
+    ];
 
     FailedPartitionDescriptor[] _rows;
 

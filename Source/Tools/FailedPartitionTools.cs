@@ -28,13 +28,23 @@ public static class FailedPartitionTools
     /// <param name="eventStore">The event store. Defaults to the configured event store.</param>
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="observerId">Optional observer identifier to filter by.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
     /// <returns>A concise descriptor for each failed partition.</returns>
-    public static Task<IEnumerable<FailedPartitionDescriptor>> ListFailedPartitions(
+    [McpServerTool(Name = "list_failed_partitions", ReadOnly = true, OpenWorld = false)]
+    [Description("Lists observer partitions that have failed and are paused, including the failure reason and the sequence number where the failure occurred. Use to discover what needs investigation or recovery.")]
+    public static async Task<IEnumerable<FailedPartitionDescriptor>> ListFailedPartitions(
         IServices services,
         ChronicleConnectionConfiguration configuration,
-        string? eventStore = null,
-        string? @namespace = null,
-        string? observerId = null) => ListFailedPartitionsWithCancellation(services, configuration, eventStore, @namespace, observerId);
+        [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
+        [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null,
+        [Description("Optional observer identifier to filter by.")] string? observerId = null,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var request = ResolveScope(configuration, eventStore, @namespace);
+        request.ObserverId = observerId;
+        return (await services.FailedPartitions.GetFailedPartitions(request, cancellationToken)).Select(DescribeFailure);
+    }
 
     /// <summary>
     /// Inspects a failed partition's latest attempt and a bounded window ending at the exact failed event position.
@@ -46,42 +56,11 @@ public static class FailedPartitionTools
     /// <param name="namespace">The namespace. Defaults to the configured namespace.</param>
     /// <param name="eventSequenceId">The observer's event sequence. Defaults to event-log.</param>
     /// <param name="precedingCount">Maximum number of preceding events. Clamped to 0–50; defaults to 10.</param>
+    /// <param name="cancellationToken">The cancellation token for the request.</param>
     /// <returns>The failure explanation or the reason a full explanation is unavailable.</returns>
-    public static Task<FailedPartitionExplanation> ExplainFailedPartition(
-        IServices services,
-        ChronicleConnectionConfiguration configuration,
-        Guid failedPartitionId,
-        string? eventStore = null,
-        string? @namespace = null,
-        string eventSequenceId = "event-log",
-        int precedingCount = 10) => ExplainFailedPartitionWithCancellation(services, configuration, failedPartitionId, eventStore, @namespace, eventSequenceId, precedingCount);
-
-    /// <inheritdoc cref="ListFailedPartitions"/>
-    [McpServerTool(Name = "list_failed_partitions", ReadOnly = true, OpenWorld = false)]
-    [Description("Lists observer partitions that have failed and are paused, including the failure reason and the sequence number where the failure occurred. Use to discover what needs investigation or recovery.")]
-    internal static async Task<IEnumerable<FailedPartitionDescriptor>> ListFailedPartitionsWithCancellation(
-        IServices services,
-        ChronicleConnectionConfiguration configuration,
-        [Description("The event store. Defaults to the configured event store.")] string? eventStore = null,
-        [Description("The namespace. Defaults to the configured namespace.")] string? @namespace = null,
-        [Description("Optional observer identifier to filter by.")] string? observerId = null,
-        CancellationToken cancellationToken = default)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        var request = new GetFailedPartitionsRequest
-        {
-            EventStore = configuration.ResolveEventStore(eventStore),
-            Namespace = configuration.ResolveNamespace(@namespace),
-            ObserverId = observerId
-        };
-        var failedPartitions = await services.FailedPartitions.GetFailedPartitions(request, cancellationToken);
-        return failedPartitions.Select(DescribeFailure);
-    }
-
-    /// <inheritdoc cref="ExplainFailedPartition"/>
     [McpServerTool(Name = "explain_failed_partition", ReadOnly = true, OpenWorld = false)]
     [Description("Inspects a failed partition's latest attempt, exact failed event, and bounded preceding sequence history. Does not perform recovery.")]
-    internal static async Task<FailedPartitionExplanation> ExplainFailedPartitionWithCancellation(
+    public static async Task<FailedPartitionExplanation> ExplainFailedPartition(
         IServices services,
         ChronicleConnectionConfiguration configuration,
         [Description("The failed partition identifier from list_failed_partitions.")] Guid failedPartitionId,
@@ -91,11 +70,7 @@ public static class FailedPartitionTools
         [Description("Maximum number of preceding events, clamped to 0–50. Defaults to 10.")] int precedingCount = 10,
         CancellationToken cancellationToken = default)
     {
-        var scope = new GetFailedPartitionsRequest
-        {
-            EventStore = configuration.ResolveEventStore(eventStore),
-            Namespace = configuration.ResolveNamespace(@namespace)
-        };
+        var scope = ResolveScope(configuration, eventStore, @namespace);
         var result = ForScope(failedPartitionId, scope, eventSequenceId, precedingCount);
         var failure = await FindFailure(services, scope, failedPartitionId, cancellationToken);
         if (failure is null) return result;
@@ -121,6 +96,12 @@ public static class FailedPartitionTools
         result = result with { IsQuarantined = current.IsQuarantined };
         return page is null ? result with { Status = "unsupported" } : WithPage(result, page, attempt.SequenceNumber);
     }
+
+    static GetFailedPartitionsRequest ResolveScope(ChronicleConnectionConfiguration configuration, string? eventStore, string? @namespace) => new()
+    {
+        EventStore = configuration.ResolveEventStore(eventStore),
+        Namespace = configuration.ResolveNamespace(@namespace)
+    };
 
     static FailedPartitionDescriptor DescribeFailure(FailedPartition failure)
     {
